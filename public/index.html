@@ -10,335 +10,601 @@
 <title>LinkCurator</title>
 <link rel="manifest" href="/manifest.json">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --surface2: #334155;
-    --border: #334155;
-    --text: #f1f5f9;
-    --text-muted: #94a3b8;
-    --accent: #7c3aed;
-    --accent-light: #a78bfa;
-    --danger: #ef4444;
-    --success: #10b981;
-    --cat-claude: #8B5CF6;
-    --cat-research: #3B82F6;
-    --cat-tools: #10B981;
-    --cat-community: #F59E0B;
-    --cat-safety: #EF4444;
-    --cat-industry: #06B6D4;
-    --cat-tutorials: #6366F1;
-    --cat-misc: #6B7280;
-    --bottom-nav-h: 64px;
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
+:root {
+  --bg:         #0f172a;
+  --surface:    #1e293b;
+  --surface2:   #263349;
+  --border:     #334155;
+  --text:       #e2e8f0;
+  --muted:      #94a3b8;
+  --accent:     #7c3aed;
+  --accent-lt:  #a78bfa;
+  --danger:     #ef4444;
+  --success:    #10b981;
+  --radius:     12px;
+  --nav-h:      64px;
+  --safe-b:     env(safe-area-inset-bottom, 0px);
+  --safe-t:     env(safe-area-inset-top, 0px);
+}
 
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overscroll-behavior: none; }
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
 
-  #app { display: flex; flex-direction: column; height: 100dvh; }
+/* ── Layout ──────────────────────────────────────────────────────────── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 640px;
+  margin: 0 auto;
+}
 
-  /* Header */
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 16px 10px;
-    padding-top: calc(14px + env(safe-area-inset-top, 0px));
-    display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
-  }
-  .header-brand { display: flex; align-items: center; gap: 8px; }
-  .header-logo { width: 28px; height: 28px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-  header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
-  .header-stats { font-size: 12px; color: var(--text-muted); display: flex; gap: 10px; }
-  .stat-badge { background: var(--surface2); padding: 3px 8px; border-radius: 99px; font-weight: 600; }
-  .stat-badge.unread { background: var(--accent); color: white; }
+/* ── Header ─────────────────────────────────────────────────────────── */
+header {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: calc(var(--safe-t) + 12px) 16px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-  /* Tab content area */
-  #tab-content { flex: 1; overflow: hidden; position: relative; }
-  .tab-pane { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior-y: contain; display: none; padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px); }
-  .tab-pane.active { display: block; }
+.hdr-brand { display: flex; align-items: center; gap: 8px; flex: 1; }
+.hdr-logo {
+  width: 30px; height: 30px; background: var(--accent);
+  border-radius: 8px; display: flex; align-items: center;
+  justify-content: center; font-size: 16px; flex-shrink: 0;
+}
+header h1 { font-size: 1.05rem; font-weight: 700; color: var(--accent-lt); letter-spacing: -0.02em; }
 
-  /* Bottom nav */
-  nav {
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    display: flex;
-    height: calc(var(--bottom-nav-h) + var(--safe-bottom));
-    padding-bottom: var(--safe-bottom);
-    flex-shrink: 0;
-  }
-  .nav-btn {
-    flex: 1; background: none; border: none; color: var(--text-muted);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 3px; font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
-    cursor: pointer; transition: color 0.15s; position: relative; text-transform: uppercase;
-  }
-  .nav-btn svg { width: 22px; height: 22px; }
-  .nav-btn.active { color: var(--accent-light); }
-  .nav-badge {
-    position: absolute; top: 8px; right: calc(50% - 18px);
-    background: var(--danger); color: white; font-size: 9px; font-weight: 700;
-    border-radius: 99px; padding: 1px 5px; min-width: 16px; text-align: center;
-    display: none;
-  }
-  .nav-badge.visible { display: block; }
+.hdr-stats { display: flex; gap: 6px; align-items: center; }
+.stat-pill {
+  font-size: 0.7rem; font-weight: 700; padding: 3px 8px;
+  border-radius: 99px; background: var(--surface2);
+  border: 1px solid var(--border); color: var(--muted);
+  white-space: nowrap;
+}
+.stat-pill.accent { background: rgba(124,58,237,0.2); border-color: rgba(124,58,237,0.4); color: var(--accent-lt); }
 
-  /* Cards */
-  .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px; margin: 12px 14px 0;
-    position: relative; overflow: hidden;
-  }
-  .card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--cat-color, var(--accent)); border-radius: 3px 0 0 3px; }
-  .card.read { opacity: 0.55; }
-  .card-title { font-size: 15px; font-weight: 600; line-height: 1.3; margin-bottom: 6px; }
-  .card-title a { color: var(--text); text-decoration: none; }
-  .card-title a:hover { color: var(--accent-light); }
-  .card-summary { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .source-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: var(--surface2); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .source-badge.reddit { background: #ff4500; color: white; }
-  .source-badge.x, .source-badge.twitter { background: #000; color: white; border: 1px solid #333; }
-  .source-badge.youtube { background: #ff0000; color: white; }
-  .tag { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: rgba(124,58,237,0.15); color: var(--accent-light); font-weight: 500; }
-  .card-time { font-size: 11px; color: var(--text-muted); margin-left: auto; }
-  .card-actions { display: flex; gap: 8px; margin-top: 10px; }
-  .btn-sm {
-    font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 8px;
-    border: none; cursor: pointer; transition: opacity 0.15s;
-  }
-  .btn-sm:active { opacity: 0.7; }
-  .btn-read { background: var(--surface2); color: var(--text-muted); }
-  .btn-read.done { background: rgba(16,185,129,0.15); color: var(--success); }
-  .btn-delete { background: rgba(239,68,68,0.1); color: var(--danger); }
-  .btn-open { background: rgba(124,58,237,0.15); color: var(--accent-light); margin-left: auto; }
+/* ── Tab panels ──────────────────────────────────────────────────────── */
+#tab-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
 
-  /* Category sections */
-  .cat-section { margin-top: 20px; }
-  .cat-header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 0 14px 6px; position: sticky; top: 0; z-index: 2;
-    background: var(--bg); backdrop-filter: blur(8px);
-  }
-  .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .cat-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  .cat-count { font-size: 12px; color: var(--text-muted); background: var(--surface2); padding: 1px 7px; border-radius: 99px; }
+.tab-pane {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: none;
+  padding-bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
+}
 
-  /* Save tab */
-  .save-form { padding: 16px; }
-  .field-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; }
-  .url-row { display: flex; gap: 8px; margin-bottom: 12px; }
-  .url-input {
-    flex: 1; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 15px;
-    outline: none; transition: border-color 0.15s;
-  }
-  .url-input:focus { border-color: var(--accent); }
-  .url-input::placeholder { color: var(--text-muted); }
-  .btn-paste {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
-    color: var(--text-muted); font-size: 12px; font-weight: 600; padding: 0 12px;
-    cursor: pointer; white-space: nowrap; transition: background 0.15s;
-  }
-  .btn-paste:active { background: var(--surface); }
-  .note-input {
-    width: 100%; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px;
-    outline: none; resize: none; font-family: inherit; transition: border-color 0.15s;
-    margin-bottom: 12px;
-  }
-  .note-input:focus { border-color: var(--accent); }
-  .btn-save {
-    width: 100%; background: var(--accent); color: white; border: none;
-    border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700;
-    cursor: pointer; transition: opacity 0.15s; letter-spacing: -0.2px;
-  }
-  .btn-save:active { opacity: 0.85; }
-  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+.tab-pane.active { display: block; }
 
-  /* Processing card */
-  .processing-card { border: 1px dashed var(--border); border-radius: 12px; padding: 14px; margin: 12px 14px 0; }
-  .processing-url { font-size: 12px; color: var(--text-muted); word-break: break-all; margin-bottom: 8px; }
-  .processing-row { display: flex; align-items: center; gap: 8px; }
-  .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .processing-text { font-size: 13px; color: var(--text-muted); }
+/* ── Bottom Nav ──────────────────────────────────────────────────────── */
+nav {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding-bottom: var(--safe-b);
+}
 
-  /* Digest header */
-  .digest-header { padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
-  .date-nav { display: flex; align-items: center; gap: 8px; }
-  .btn-nav { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); padding: 6px 10px; font-size: 16px; cursor: pointer; }
-  .btn-nav:active { background: var(--surface2); }
-  .date-label { font-size: 14px; font-weight: 700; flex: 1; text-align: center; }
-  .digest-total { font-size: 12px; color: var(--text-muted); }
+.nav-btn {
+  flex: 1; background: none; border: none;
+  color: var(--muted); padding: 10px 4px 8px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 3px; cursor: pointer;
+  font-size: 0.65rem; font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  transition: color 0.15s; position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  /* Browse */
-  .browse-controls { padding: 12px 14px; position: sticky; top: 0; z-index: 3; background: var(--bg); }
-  .search-input {
-    width: 100%; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 15px;
-    outline: none; transition: border-color 0.15s; margin-bottom: 10px;
-  }
-  .search-input:focus { border-color: var(--accent); }
-  .filter-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-  .filter-row::-webkit-scrollbar { display: none; }
-  .filter-chip {
-    flex-shrink: 0; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 99px; padding: 5px 12px; font-size: 12px; font-weight: 600;
-    color: var(--text-muted); cursor: pointer; white-space: nowrap; transition: all 0.15s;
-  }
-  .filter-chip.active { background: var(--accent); border-color: var(--accent); color: white; }
-  .filter-chip.unread-toggle { border-color: var(--success); color: var(--success); }
-  .filter-chip.unread-toggle.active { background: var(--success); color: white; }
+.nav-btn svg { width: 22px; height: 22px; stroke-width: 1.8; }
+.nav-btn.active { color: var(--accent-lt); }
 
-  /* Empty state */
-  .empty { text-align: center; padding: 48px 24px; color: var(--text-muted); }
-  .empty-icon { font-size: 48px; margin-bottom: 12px; }
-  .empty h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-  .empty p { font-size: 14px; line-height: 1.5; }
+.nav-badge {
+  position: absolute; top: 6px; right: calc(50% - 20px);
+  background: var(--danger); color: #fff;
+  font-size: 0.58rem; font-weight: 800;
+  border-radius: 99px; padding: 1px 5px;
+  min-width: 16px; text-align: center; display: none;
+}
+.nav-badge.on { display: block; }
 
-  /* Load more */
-  .load-more-wrap { padding: 16px; text-align: center; }
-  .btn-load-more { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); font-size: 13px; font-weight: 600; padding: 10px 24px; cursor: pointer; }
+/* ── Cards ───────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: 10px 14px 0;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
 
-  /* Toast */
-  #toast {
-    position: fixed; bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 12px);
-    left: 50%; transform: translateX(-50%) translateY(20px);
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--text);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4); opacity: 0; transition: all 0.2s;
-    z-index: 100; white-space: nowrap; pointer-events: none;
-  }
-  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  #toast.success { border-color: var(--success); color: var(--success); }
-  #toast.error { border-color: var(--danger); color: var(--danger); }
+.card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--cat-color, var(--accent));
+  border-radius: 3px 0 0 3px;
+}
 
-  /* Section divider */
-  .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); padding: 16px 14px 4px; }
+.card.read { opacity: 0.55; }
 
-  @media (min-width: 640px) {
-    .card { margin-left: auto; margin-right: auto; max-width: 600px; }
-    .cat-header { max-width: 600px; margin: 0 auto; }
-    .save-form { max-width: 600px; margin: 0 auto; }
-    .digest-header { max-width: 600px; margin: 0 auto; }
-    .browse-controls { max-width: 600px; margin: 0 auto; }
-    .load-more-wrap { max-width: 600px; margin: 0 auto; }
-  }
+.card-title {
+  font-size: 0.9rem; font-weight: 600;
+  line-height: 1.35; margin-bottom: 5px;
+}
+
+.card-title a { color: var(--text); text-decoration: none; }
+.card-title a:hover { color: var(--accent-lt); }
+
+.card-url {
+  font-size: 0.68rem; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: block; margin-bottom: 6px;
+}
+
+.card-summary {
+  font-size: 0.8rem; color: var(--muted);
+  line-height: 1.45; margin-bottom: 9px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-meta {
+  display: flex; align-items: center;
+  gap: 5px; flex-wrap: wrap;
+}
+
+.src-badge {
+  font-size: 0.65rem; font-weight: 700;
+  padding: 2px 7px; border-radius: 99px;
+  background: var(--surface2); color: var(--muted);
+  border: 1px solid var(--border);
+  white-space: nowrap; flex-shrink: 0;
+}
+
+.src-badge.reddit { background: #ff4500; color: #fff; border-color: #ff4500; }
+.src-badge.x      { background: #000;    color: #fff; border-color: #333; }
+.src-badge.yt     { background: #ff0000; color: #fff; border-color: #ff0000; }
+
+.tag-chip {
+  font-size: 0.62rem; font-weight: 600;
+  padding: 2px 7px; border-radius: 99px;
+  background: rgba(124,58,237,0.14);
+  color: var(--accent-lt);
+  border: 1px solid rgba(124,58,237,0.28);
+  white-space: nowrap;
+}
+
+.card-time { font-size: 0.68rem; color: var(--muted); margin-left: auto; white-space: nowrap; }
+
+.card-actions { display: flex; gap: 6px; margin-top: 10px; align-items: center; }
+
+.btn-sm {
+  font-size: 0.72rem; font-weight: 700; padding: 5px 11px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--muted);
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent; white-space: nowrap;
+}
+.btn-sm:active { opacity: 0.7; }
+.btn-sm.read-done { background: rgba(16,185,129,0.12); color: var(--success); border-color: rgba(16,185,129,0.3); }
+.btn-sm.del      { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.25); }
+.btn-sm.open     { background: rgba(124,58,237,0.12); color: var(--accent-lt); border-color: rgba(124,58,237,0.28); margin-left: auto; text-decoration: none; display: inline-block; }
+
+/* ── SAVE TAB ────────────────────────────────────────────────────────── */
+.save-hero {
+  margin: 16px 14px 4px;
+  background: linear-gradient(135deg, rgba(124,58,237,0.14) 0%, rgba(49,130,206,0.06) 100%);
+  border: 1px solid rgba(124,58,237,0.28);
+  border-radius: 16px; padding: 18px;
+}
+
+.save-hero h2 { font-size: 0.9rem; font-weight: 700; color: var(--accent-lt); margin-bottom: 14px; }
+
+.url-row { display: flex; gap: 8px; margin-bottom: 10px; }
+
+.url-input {
+  flex: 1; min-width: 0;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 11px 13px;
+  color: var(--text); font-size: 0.95rem; outline: none;
+  transition: border-color 0.15s;
+}
+.url-input:focus { border-color: var(--accent); }
+.url-input::placeholder { color: var(--muted); }
+
+.btn-paste {
+  flex-shrink: 0;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; color: var(--accent-lt);
+  font-size: 0.78rem; font-weight: 700; padding: 0 13px;
+  cursor: pointer; transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-paste:active { background: var(--border); }
+
+.note-input {
+  width: 100%; background: var(--bg);
+  border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 10px 13px; color: var(--text);
+  font-size: 0.85rem; outline: none; resize: none;
+  font-family: inherit; transition: border-color 0.15s;
+  margin-bottom: 12px;
+}
+.note-input:focus { border-color: var(--accent); }
+.note-input::placeholder { color: var(--muted); }
+
+.btn-save {
+  width: 100%; background: var(--accent); border: none;
+  border-radius: 10px; color: #fff; font-size: 1rem;
+  font-weight: 700; padding: 13px; cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent; letter-spacing: -0.01em;
+}
+.btn-save:active { transform: scale(0.98); }
+.btn-save:hover { background: #6d28d9; }
+.btn-save:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+
+/* Processing card */
+.proc-card {
+  background: var(--surface); border: 1px dashed var(--border);
+  border-radius: var(--radius); padding: 14px;
+  margin: 10px 14px 0; display: flex; align-items: flex-start; gap: 10px;
+}
+.spinner {
+  width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px;
+  border: 2px solid var(--border); border-top-color: var(--accent-lt);
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.proc-url { font-size: 0.78rem; color: var(--muted); word-break: break-all; }
+.proc-label { font-size: 0.72rem; color: var(--accent-lt); margin-top: 3px; font-weight: 600; }
+
+/* Section label */
+.section-label {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--muted);
+  padding: 16px 14px 4px;
+}
+
+/* ── DIGEST TAB ──────────────────────────────────────────────────────── */
+.date-nav-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 14px 6px; position: sticky; top: 0;
+  background: var(--bg); z-index: 4;
+}
+
+.nav-arrow {
+  width: 36px; height: 36px; flex-shrink: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 9px; display: flex; align-items: center;
+  justify-content: center; cursor: pointer;
+  transition: background 0.15s; -webkit-tap-highlight-color: transparent;
+}
+.nav-arrow:hover, .nav-arrow:active { background: var(--border); }
+.nav-arrow:disabled { opacity: 0.35; cursor: not-allowed; }
+.nav-arrow svg { width: 18px; height: 18px; stroke-width: 2; color: var(--text); }
+
+.date-display {
+  flex: 1; text-align: center;
+  font-size: 0.95rem; font-weight: 700; line-height: 1.2;
+}
+
+.today-chip {
+  display: inline-block; font-size: 0.6rem; font-weight: 700;
+  background: rgba(124,58,237,0.2); color: var(--accent-lt);
+  border: 1px solid rgba(124,58,237,0.3); border-radius: 99px;
+  padding: 1px 7px; margin-left: 5px; vertical-align: middle;
+}
+
+.digest-count { font-size: 0.72rem; color: var(--muted); }
+
+.ptr-hint {
+  text-align: center; padding: 6px; font-size: 0.72rem;
+  color: var(--muted); display: none;
+}
+.ptr-hint.show { display: block; }
+
+.cat-section { margin-top: 4px; }
+
+.cat-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 14px 6px; position: sticky; top: 70px; z-index: 3;
+  background: var(--bg);
+}
+.cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.cat-name { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; flex: 1; }
+.cat-count {
+  font-size: 0.68rem; color: var(--muted);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 99px; padding: 1px 8px;
+}
+
+/* ── BROWSE TAB ──────────────────────────────────────────────────────── */
+.browse-sticky {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--bg); padding: 12px 14px 6px;
+}
+
+.search-wrap { position: relative; margin-bottom: 10px; }
+.search-icon {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); pointer-events: none;
+}
+.search-icon svg { width: 15px; height: 15px; stroke-width: 2; }
+
+.search-input {
+  width: 100%; background: var(--surface);
+  border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 10px 13px 10px 34px; color: var(--text);
+  font-size: 0.9rem; outline: none; transition: border-color 0.15s;
+}
+.search-input:focus { border-color: var(--accent); }
+.search-input::placeholder { color: var(--muted); }
+
+.filter-scroll {
+  display: flex; gap: 6px; overflow-x: auto;
+  padding-bottom: 2px; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.filter-scroll::-webkit-scrollbar { display: none; }
+
+.fchip {
+  flex-shrink: 0;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 99px; padding: 5px 12px;
+  font-size: 0.72rem; font-weight: 600; color: var(--muted);
+  cursor: pointer; white-space: nowrap; transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.fchip.active {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+
+.unread-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0 4px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.toggle-track {
+  width: 38px; height: 22px; flex-shrink: 0;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 99px; position: relative;
+  transition: background 0.2s, border-color 0.2s;
+}
+.toggle-track.on { background: var(--accent); border-color: var(--accent); }
+.toggle-thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; background: #fff;
+  border-radius: 50%; transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+}
+.toggle-track.on .toggle-thumb { transform: translateX(16px); }
+.unread-label { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+
+.load-more-btn {
+  display: block; width: calc(100% - 28px); margin: 12px 14px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 10px; color: var(--accent-lt);
+  font-size: 0.88rem; font-weight: 700; padding: 12px;
+  cursor: pointer; text-align: center;
+  -webkit-tap-highlight-color: transparent; transition: background 0.15s;
+}
+.load-more-btn:hover, .load-more-btn:active { background: var(--surface2); }
+.load-more-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.empty {
+  text-align: center; padding: 56px 24px; color: var(--muted);
+}
+.empty-icon { font-size: 3rem; display: block; margin-bottom: 14px; }
+.empty h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.empty p { font-size: 0.85rem; line-height: 1.5; }
+
+/* ── Toast ───────────────────────────────────────────────────────────── */
+#toasts {
+  position: fixed;
+  bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
+  left: 50%; transform: translateX(-50%);
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 6px;
+  pointer-events: none;
+  width: min(380px, calc(100vw - 28px));
+}
+
+.toast {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px 16px;
+  font-size: 0.82rem; font-weight: 600; color: var(--text);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+  animation: toast-in 0.22s ease;
+}
+.toast.success { border-color: rgba(16,185,129,0.45); color: #6ee7b7; }
+.toast.error   { border-color: rgba(239,68,68,0.45);  color: #fca5a5; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar */
+.tab-pane::-webkit-scrollbar { width: 3px; }
+.tab-pane::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 </style>
 </head>
 <body>
 <div id="app">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
   <header>
-    <div class="header-brand">
-      <div class="header-logo">🔗</div>
+    <div class="hdr-brand">
+      <div class="hdr-logo">🔗</div>
       <h1>LinkCurator</h1>
     </div>
-    <div class="header-stats">
-      <span class="stat-badge unread" id="hdr-unread" style="display:none"></span>
-      <span class="stat-badge" id="hdr-today">0 today</span>
+    <div class="hdr-stats">
+      <span class="stat-pill" id="stat-today" style="display:none"></span>
+      <span class="stat-pill accent" id="stat-unread" style="display:none"></span>
     </div>
   </header>
 
+  <!-- ── Panels ──────────────────────────────────────────────────────── -->
   <div id="tab-content">
-    <!-- SAVE TAB -->
+
+    <!-- SAVE -->
     <div class="tab-pane active" id="pane-save">
-      <div class="save-form">
-        <div class="field-label">URL</div>
+      <div class="save-hero">
+        <h2>Save a Link</h2>
         <div class="url-row">
-          <input class="url-input" id="url-input" type="url" placeholder="https://..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+          <input class="url-input" id="url-input" type="url"
+            placeholder="https://…" autocomplete="off"
+            autocorrect="off" autocapitalize="none" spellcheck="false">
           <button class="btn-paste" id="btn-paste">Paste</button>
         </div>
-        <div class="field-label">Note (optional)</div>
-        <textarea class="note-input" id="note-input" rows="2" placeholder="Why is this interesting?"></textarea>
-        <button class="btn-save" id="btn-save">Save & Classify</button>
+        <textarea class="note-input" id="note-input" rows="2"
+          placeholder="Optional note…"></textarea>
+        <button class="btn-save" id="btn-save">Save &amp; Analyze</button>
       </div>
+
+      <div id="proc-area"></div>
 
       <div class="section-label">Recent Saves</div>
       <div id="recent-saves"></div>
     </div>
 
-    <!-- DIGEST TAB -->
+    <!-- DIGEST -->
     <div class="tab-pane" id="pane-digest">
-      <div class="digest-header">
-        <button class="btn-nav" id="digest-prev">‹</button>
+      <div class="ptr-hint" id="ptr-hint">↓ Pull down to refresh</div>
+      <div class="date-nav-bar">
+        <button class="nav-arrow" id="digest-prev" title="Previous day">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
         <div>
-          <div class="date-label" id="digest-date-label">Today</div>
-          <div class="digest-total" id="digest-total"></div>
+          <div class="date-display" id="digest-date-label">Today</div>
+          <div class="digest-count" id="digest-count"></div>
         </div>
-        <button class="btn-nav" id="digest-next">›</button>
+        <button class="nav-arrow" id="digest-next" title="Next day">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
       </div>
       <div id="digest-content"></div>
     </div>
 
-    <!-- BROWSE TAB -->
+    <!-- BROWSE -->
     <div class="tab-pane" id="pane-browse">
-      <div class="browse-controls">
-        <input class="search-input" id="search-input" type="search" placeholder="Search links...">
-        <div class="filter-row" id="filter-row">
-          <button class="filter-chip active" data-cat="">All</button>
-          <button class="filter-chip unread-toggle" id="unread-toggle">Unread</button>
+      <div class="browse-sticky">
+        <div class="search-wrap">
+          <span class="search-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <input class="search-input" id="search-input" type="search"
+            placeholder="Search links…" autocomplete="off">
         </div>
+        <div class="filter-scroll" id="filter-row">
+          <button class="fchip active" data-cat="">All</button>
+        </div>
+        <label class="unread-row" id="unread-row">
+          <div class="toggle-track" id="toggle-track"></div>
+          <span class="unread-label">Unread only</span>
+        </label>
       </div>
       <div id="browse-list"></div>
-      <div class="load-more-wrap" id="load-more-wrap" style="display:none">
-        <button class="btn-load-more" id="btn-load-more">Load more</button>
-      </div>
+      <button class="load-more-btn" id="btn-load-more" style="display:none">Load more</button>
     </div>
-  </div>
 
+  </div><!-- /tab-content -->
+
+  <!-- ── Bottom Nav ───────────────────────────────────────────────────── -->
   <nav>
-    <button class="nav-btn active" data-tab="save" id="nav-save">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    <button class="nav-btn active" data-tab="save">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/>
+        <polyline points="7 3 7 8 15 8"/>
+      </svg>
       Save
     </button>
-    <button class="nav-btn" data-tab="digest" id="nav-digest">
-      <div class="nav-badge" id="digest-badge"></div>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <button class="nav-btn" data-tab="digest">
+      <span class="nav-badge" id="nav-badge-digest"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
       Digest
     </button>
-    <button class="nav-btn" data-tab="browse" id="nav-browse">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <button class="nav-btn" data-tab="browse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+        <line x1="8" y1="18" x2="21" y2="18"/>
+        <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+        <line x1="3" y1="18" x2="3.01" y2="18"/>
+      </svg>
       Browse
     </button>
   </nav>
-</div>
 
-<div id="toast"></div>
+</div><!-- /app -->
+
+<div id="toasts"></div>
 
 <script>
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════
 const CAT_COLORS = {
-  'Claude & Anthropic':   '#8B5CF6',
-  'AI Research & Papers': '#3B82F6',
-  'AI Tools & Products':  '#10B981',
-  'Community Discussions':'#F59E0B',
-  'AI Safety & Ethics':   '#EF4444',
-  'AI in Industry':       '#06B6D4',
-  'Tutorials & How-tos':  '#6366F1',
-  'Miscellaneous':        '#6B7280',
+  'Claude & Anthropic':    '#8B5CF6',
+  'AI Research & Papers':  '#3B82F6',
+  'AI Tools & Products':   '#10B981',
+  'Community Discussions': '#F59E0B',
+  'AI Safety & Ethics':    '#EF4444',
+  'AI in Industry':        '#06B6D4',
+  'Tutorials & How-tos':   '#6366F1',
+  'Miscellaneous':         '#6B7280',
 };
 
-function catColor(cat) { return CAT_COLORS[cat] || '#6B7280'; }
+const CAT_ORDER = [
+  'Claude & Anthropic', 'AI Research & Papers', 'AI Tools & Products',
+  'Community Discussions', 'AI Safety & Ethics', 'AI in Industry',
+  'Tutorials & How-tos', 'Miscellaneous',
+];
 
-function sourceBadgeClass(source) {
-  if (!source) return '';
-  const s = source.toLowerCase();
-  if (s === 'reddit') return 'reddit';
-  if (s === 'x' || s === 'twitter' || s.includes('twitter') || s.includes('x.com')) return 'x';
-  if (s === 'youtube') return 'youtube';
-  return '';
-}
+const PAGE = 20;
 
-function sourceBadgeLabel(source) {
-  if (!source) return 'WEB';
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function catColor(c) { return CAT_COLORS[c] || '#6B7280'; }
+
+function srcBadgeInfo(source) {
+  if (!source) return { label: '🌐', cls: '' };
   const s = source.toLowerCase();
-  if (s === 'reddit') return 'Reddit';
-  if (s === 'x' || s === 'twitter' || s.includes('twitter')) return '𝕏';
-  if (s === 'youtube') return 'YT';
-  return source.toUpperCase().slice(0, 8);
+  if (s === 'reddit' || s.includes('reddit')) return { label: 'r/', cls: 'reddit' };
+  if (s === 'x' || s === 'twitter' || s.includes('twitter') || s.includes('x.com')) return { label: '𝕏', cls: 'x' };
+  if (s === 'youtube' || s.includes('youtube')) return { label: '▶', cls: 'yt' };
+  if (s === 'email') return { label: '✉', cls: '' };
+  return { label: (source.slice(0, 6) || 'web').toUpperCase(), cls: '' };
 }
 
 function timeAgo(ts) {
@@ -348,127 +614,218 @@ function timeAgo(ts) {
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function toDateStr(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+function addDays(iso, n) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(y, m - 1, d + n);
+  return toDateStr(date);
+}
+
+function fmtDateLabel(iso) {
+  const today = toDateStr(new Date());
+  if (iso === today) return 'Today';
+  const yest = addDays(today, -1);
+  if (iso === yest) return 'Yesterday';
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric'
+  });
 }
 
 function domainOf(url) {
-  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
+  try { return new URL(url).hostname.replace(/^www\./, ''); }
+  catch { return url.slice(0, 40); }
 }
 
-// ─── Toast ───────────────────────────────────────────────────────────────────
-let toastTimer;
-function toast(msg, type = 'default') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = `show${type !== 'default' ? ' ' + type : ''}`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = ''; }, 2500);
+function truncUrl(url) {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.length > 32 ? u.pathname.slice(0, 32) + '…' : u.pathname;
+    return u.hostname.replace(/^www\./, '') + path;
+  } catch { return url.slice(0, 50); }
 }
 
-// ─── API helpers ─────────────────────────────────────────────────────────────
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
 async function api(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(path, opts);
-  return res.json();
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
 }
 
-// ─── Tab routing ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+function toast(msg, type = '', dur = 3000) {
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.3s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 320);
+  }, dur);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB ROUTING
+// ═══════════════════════════════════════════════════════════════
 let activeTab = 'save';
-function switchTab(tab) {
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`pane-${tab}`).classList.add('active');
-  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
-  activeTab = tab;
-  if (tab === 'digest') renderDigest();
-  if (tab === 'browse') renderBrowse(true);
+
+function switchTab(name) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
+  activeTab = name;
+  if (name === 'digest') loadDigest();
+  if (name === 'browse') { browseReset(); loadBrowse(); }
 }
 
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-});
+document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
-// ─── Stats ───────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════════════
 async function refreshStats() {
   try {
-    const stats = await api('GET', '/api/stats');
-    const hdrUnread = document.getElementById('hdr-unread');
-    const hdrToday = document.getElementById('hdr-today');
-    const digestBadge = document.getElementById('digest-badge');
+    const s = await api('GET', '/api/stats');
+    const today = document.getElementById('stat-today');
+    const unread = document.getElementById('stat-unread');
+    const badge = document.getElementById('nav-badge-digest');
 
-    hdrToday.textContent = `${stats.today || 0} today`;
-    if (stats.unread > 0) {
-      hdrUnread.textContent = `${stats.unread} unread`;
-      hdrUnread.style.display = '';
-      digestBadge.textContent = stats.unread;
-      digestBadge.classList.add('visible');
+    today.textContent = `${s.today || 0} today`;
+    today.style.display = '';
+
+    if ((s.unread || 0) > 0) {
+      unread.textContent = `${s.unread} unread`;
+      unread.style.display = '';
+      badge.textContent = s.unread;
+      badge.classList.add('on');
     } else {
-      hdrUnread.style.display = 'none';
-      digestBadge.classList.remove('visible');
+      unread.style.display = 'none';
+      badge.classList.remove('on');
     }
-  } catch (e) { /* ignore */ }
+  } catch (_) {}
 }
 
-// ─── Card rendering ──────────────────────────────────────────────────────────
-function renderCard(link, opts = {}) {
+// ═══════════════════════════════════════════════════════════════
+// CARD RENDERING + EVENTS
+// ═══════════════════════════════════════════════════════════════
+function buildCard(link) {
   const color = catColor(link.category);
   const tags = Array.isArray(link.tags) ? link.tags : JSON.parse(link.tags || '[]');
-  const src = (link.source || 'web').toLowerCase();
+  const { label: srcLabel, cls: srcCls } = srcBadgeInfo(link.source);
+  const isPending = link.status === 'pending';
 
   const div = document.createElement('div');
-  div.className = `card${link.read ? ' read' : ''}`;
-  div.style.setProperty('--cat-color', color);
+  div.className = 'card' + (link.read ? ' read' : '');
   div.dataset.id = link.id;
+  div.style.setProperty('--cat-color', color);
+
+  const titleText = escHtml(link.title || domainOf(link.url));
+  const urlDisplay = (link.title && link.title !== link.url)
+    ? `<span class="card-url">${escHtml(truncUrl(link.url))}</span>` : '';
+  const summaryHtml = link.summary
+    ? `<div class="card-summary">${escHtml(link.summary)}</div>` : '';
+  const tagsHtml = tags.slice(0, 4).map(t => `<span class="tag-chip">${escHtml(t)}</span>`).join('');
+  const actionsHtml = isPending ? '' : `
+    <div class="card-actions">
+      <button class="btn-sm read-btn${link.read ? ' read-done' : ''}" data-id="${link.id}" data-read="${link.read ? 1 : 0}">
+        ${link.read ? '✓ Read' : 'Mark read'}
+      </button>
+      <button class="btn-sm del del-btn" data-id="${link.id}">Delete</button>
+      <a class="btn-sm open" href="${escHtml(link.url)}" target="_blank" rel="noopener noreferrer">Open ↗</a>
+    </div>`;
 
   div.innerHTML = `
-    <div class="card-title"><a href="${link.url}" target="_blank" rel="noopener">${link.title || domainOf(link.url)}</a></div>
-    ${link.summary ? `<div class="card-summary">${link.summary}</div>` : ''}
+    <div class="card-title"><a href="${escHtml(link.url)}" target="_blank" rel="noopener noreferrer">${titleText}</a></div>
+    ${urlDisplay}
+    ${summaryHtml}
     <div class="card-meta">
-      <span class="source-badge ${sourceBadgeClass(src)}">${sourceBadgeLabel(src)}</span>
-      ${tags.map(t => `<span class="tag">${t}</span>`).join('')}
+      <span class="src-badge ${srcCls}">${srcLabel}</span>
+      ${tagsHtml}
       <span class="card-time">${timeAgo(link.created_at)}</span>
     </div>
-    <div class="card-actions">
-      <button class="btn-sm btn-read ${link.read ? 'done' : ''}" data-action="read">${link.read ? '✓ Read' : 'Mark Read'}</button>
-      <button class="btn-sm btn-delete" data-action="delete">Delete</button>
-      <a href="${link.url}" target="_blank" rel="noopener" class="btn-sm btn-open">Open ↗</a>
-    </div>
+    ${actionsHtml}
   `;
 
-  div.querySelector('[data-action="read"]').addEventListener('click', async () => {
-    const newRead = !link.read;
-    await api('PATCH', `/api/links/${link.id}`, { read: newRead });
-    link.read = newRead;
-    div.className = `card${newRead ? ' read' : ''}`;
-    div.querySelector('[data-action="read"]').className = `btn-sm btn-read${newRead ? ' done' : ''}`;
-    div.querySelector('[data-action="read"]').textContent = newRead ? '✓ Read' : 'Mark Read';
-    refreshStats();
-  });
+  // Read toggle
+  const readBtn = div.querySelector('.read-btn');
+  if (readBtn) {
+    readBtn.addEventListener('click', async () => {
+      const isRead = readBtn.dataset.read === '1';
+      try {
+        await api('PATCH', `/api/links/${link.id}`, { read: !isRead });
+        link.read = !isRead;
+        div.classList.toggle('read', !isRead);
+        readBtn.dataset.read = isRead ? '0' : '1';
+        readBtn.textContent = isRead ? 'Mark read' : '✓ Read';
+        readBtn.classList.toggle('read-done', !isRead);
+        refreshStats();
+      } catch (_) { toast('Update failed', 'error'); }
+    });
+  }
 
-  div.querySelector('[data-action="delete"]').addEventListener('click', async () => {
-    await api('DELETE', `/api/links/${link.id}`);
-    div.remove();
-    toast('Deleted', 'error');
-    refreshStats();
-    if (activeTab === 'digest') renderDigest();
-  });
+  // Delete
+  const delBtn = div.querySelector('.del-btn');
+  if (delBtn) {
+    delBtn.addEventListener('click', async () => {
+      try {
+        await api('DELETE', `/api/links/${link.id}`);
+        div.style.transition = 'opacity 0.2s';
+        div.style.opacity = '0';
+        setTimeout(() => div.remove(), 220);
+        toast('Deleted', 'success');
+        refreshStats();
+      } catch (_) { toast('Delete failed', 'error'); }
+    });
+  }
 
   return div;
 }
 
-// ─── SAVE TAB ────────────────────────────────────────────────────────────────
-const pendingPolls = new Map();
+// ═══════════════════════════════════════════════════════════════
+// SAVE TAB
+// ═══════════════════════════════════════════════════════════════
+const activePolls = new Map();
 
 document.getElementById('btn-paste').addEventListener('click', async () => {
   try {
     const text = await navigator.clipboard.readText();
-    const urlMatch = text.match(/https?:\/\/\S+/);
-    if (urlMatch) document.getElementById('url-input').value = urlMatch[0];
-    else document.getElementById('url-input').value = text.trim();
-  } catch {
-    toast('Paste denied — paste manually', 'error');
+    const m = text.match(/https?:\/\/\S+/);
+    const inp = document.getElementById('url-input');
+    inp.value = m ? m[0].replace(/[.,;!?)]+$/, '') : text.trim();
+    inp.focus();
+  } catch (_) {
+    toast('Clipboard access denied — paste manually', 'error');
   }
+});
+
+document.getElementById('url-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-save').click();
 });
 
 document.getElementById('btn-save').addEventListener('click', async () => {
@@ -477,223 +834,278 @@ document.getElementById('btn-save').addEventListener('click', async () => {
   if (!url.startsWith('http')) { toast('Enter a valid URL starting with http', 'error'); return; }
 
   const btn = document.getElementById('btn-save');
-  btn.disabled = true;
-  btn.textContent = 'Saving...';
+  btn.disabled = true; btn.textContent = 'Saving…';
 
   try {
-    const data = await api('POST', '/api/links', { url, note });
+    const data = await api('POST', '/api/links', { url, note: note || undefined });
     document.getElementById('url-input').value = '';
     document.getElementById('note-input').value = '';
-    toast('Saved! AI is classifying...', 'success');
-    addProcessingCard(data.id, url);
+    toast('Saved! AI is analyzing…', 'success');
+    showProcCard(data.id, url);
     pollLink(data.id);
     refreshStats();
-  } catch (e) {
-    toast('Error saving link', 'error');
+  } catch (_) {
+    toast('Failed to save link', 'error');
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Save & Classify';
+    btn.disabled = false; btn.textContent = 'Save & Analyze';
   }
 });
 
-function addProcessingCard(id, url) {
-  const wrap = document.getElementById('recent-saves');
+function showProcCard(id, url) {
+  const area = document.getElementById('proc-area');
   const div = document.createElement('div');
-  div.className = 'processing-card';
+  div.className = 'proc-card';
   div.id = `proc-${id}`;
   div.innerHTML = `
-    <div class="processing-url">${url}</div>
-    <div class="processing-row">
-      <div class="spinner"></div>
-      <span class="processing-text">AI is reading and classifying...</span>
+    <div class="spinner"></div>
+    <div>
+      <div class="proc-url">${escHtml(truncUrl(url))}</div>
+      <div class="proc-label">AI is analyzing…</div>
     </div>
   `;
-  wrap.prepend(div);
+  area.prepend(div);
 }
 
 async function pollLink(id) {
-  if (pendingPolls.has(id)) return;
-  const intervalId = setInterval(async () => {
+  if (activePolls.has(id)) return;
+  let tries = 0;
+  const iid = setInterval(async () => {
+    tries++;
     try {
-      const data = await api('GET', `/api/links/${id}/status`);
-      if (data.status === 'done' || data.status === 'error') {
-        clearInterval(intervalId);
-        pendingPolls.delete(id);
+      const d = await api('GET', `/api/links/${id}/status`);
+      if (d.status === 'done' || d.status === 'error') {
+        clearInterval(iid);
+        activePolls.delete(id);
         const proc = document.getElementById(`proc-${id}`);
         if (proc) {
-          if (data.status === 'done') {
-            proc.replaceWith(renderCard(data));
+          if (d.status === 'done') {
+            proc.replaceWith(buildCard(d));
           } else {
-            proc.querySelector('.processing-text').textContent = 'Classification failed — link saved without tags';
+            proc.querySelector('.proc-label').textContent = 'Saved (AI tagging unavailable)';
             proc.querySelector('.spinner').style.display = 'none';
+            setTimeout(() => proc.remove(), 4000);
           }
         }
         refreshStats();
+        loadRecentSaves();
       }
-    } catch (e) { /* ignore */ }
+    } catch (_) {}
+    if (tries >= 30) { clearInterval(iid); activePolls.delete(id); }
   }, 2000);
-  pendingPolls.set(id, intervalId);
+  activePolls.set(id, iid);
 }
 
-// ─── DIGEST TAB ──────────────────────────────────────────────────────────────
-let digestDate = new Date().toISOString().split('T')[0];
-
-function formatDateLabel(dateStr) {
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  if (dateStr === today) return 'Today';
-  if (dateStr === yesterday) return 'Yesterday';
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+async function loadRecentSaves() {
+  try {
+    const links = await api('GET', '/api/links?limit=5&offset=0');
+    const wrap = document.getElementById('recent-saves');
+    wrap.innerHTML = '';
+    if (!links.length) {
+      wrap.innerHTML = '<div style="padding:16px 14px;font-size:.82rem;color:var(--muted)">No links yet — save your first one above!</div>';
+      return;
+    }
+    links.slice(0, 5).forEach(l => wrap.appendChild(buildCard(l)));
+  } catch (_) {}
 }
+
+// ═══════════════════════════════════════════════════════════════
+// DIGEST TAB
+// ═══════════════════════════════════════════════════════════════
+let digestDate = toDateStr(new Date());
 
 document.getElementById('digest-prev').addEventListener('click', () => {
-  digestDate = new Date(new Date(digestDate).getTime() - 86400000).toISOString().split('T')[0];
-  renderDigest();
+  digestDate = addDays(digestDate, -1);
+  loadDigest();
 });
 document.getElementById('digest-next').addEventListener('click', () => {
-  const next = new Date(new Date(digestDate).getTime() + 86400000).toISOString().split('T')[0];
-  const today = new Date().toISOString().split('T')[0];
-  if (next <= today) { digestDate = next; renderDigest(); }
+  const next = addDays(digestDate, 1);
+  const today = toDateStr(new Date());
+  if (next > today) return;
+  digestDate = next;
+  loadDigest();
 });
 
-async function renderDigest() {
-  document.getElementById('digest-date-label').textContent = formatDateLabel(digestDate);
+async function loadDigest() {
+  const today = toDateStr(new Date());
+  const nextBtn = document.getElementById('digest-next');
+  nextBtn.disabled = digestDate >= today;
+
+  const label = fmtDateLabel(digestDate);
+  document.getElementById('digest-date-label').innerHTML =
+    escHtml(label) + (digestDate === today ? '<span class="today-chip">Today</span>' : '');
+
   const content = document.getElementById('digest-content');
-  content.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><p>Loading...</p></div>';
+  content.innerHTML = '<div class="empty"><div style="margin:0 auto 10px" class="spinner" style="width:24px;height:24px"></div><p>Loading…</p></div>';
 
   try {
     const data = await api('GET', `/api/digest?date=${digestDate}`);
-    document.getElementById('digest-total').textContent = data.total ? `${data.total} links` : '';
+    document.getElementById('digest-count').textContent = data.total ? `${data.total} link${data.total !== 1 ? 's' : ''}` : '';
     content.innerHTML = '';
 
-    const cats = Object.keys(data.categories);
-    if (cats.length === 0) {
+    if (data.total === 0) {
       content.innerHTML = `<div class="empty">
-        <div class="empty-icon">📭</div>
-        <h3>No links for this day</h3>
-        <p>Save some links and they'll appear here, grouped by topic.</p>
+        <span class="empty-icon">📭</span>
+        <h3>Nothing saved ${label === 'Today' ? 'today' : 'on ' + label}</h3>
+        <p>Switch to the Save tab and add your first link!</p>
       </div>`;
       return;
     }
 
-    for (const cat of cats) {
-      const links = data.categories[cat];
+    const sortedCats = Object.keys(data.categories).sort((a, b) => {
+      const ai = CAT_ORDER.indexOf(a), bi = CAT_ORDER.indexOf(b);
+      return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+    });
+
+    for (const cat of sortedCats) {
+      const items = data.categories[cat];
       const color = catColor(cat);
-      const section = document.createElement('div');
-      section.className = 'cat-section';
-      section.innerHTML = `
+      const sec = document.createElement('div');
+      sec.className = 'cat-section';
+      sec.innerHTML = `
         <div class="cat-header">
           <div class="cat-dot" style="background:${color}"></div>
-          <span class="cat-name" style="color:${color}">${cat}</span>
-          <span class="cat-count">${links.length}</span>
-        </div>
-      `;
-      for (const link of links) section.appendChild(renderCard(link));
-      content.appendChild(section);
+          <span class="cat-name" style="color:${color}">${escHtml(cat)}</span>
+          <span class="cat-count">${items.length}</span>
+        </div>`;
+      items.forEach(link => sec.appendChild(buildCard(link)));
+      content.appendChild(sec);
     }
-  } catch (e) {
-    content.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Failed to load digest.</p></div>';
+  } catch (_) {
+    content.innerHTML = `<div class="empty">
+      <span class="empty-icon">⚠️</span>
+      <h3>Failed to load</h3>
+      <p>Check your connection and try again.</p>
+    </div>`;
   }
 }
 
 // Pull-to-refresh on digest
-let ptStartY = 0;
-const digestPane = document.getElementById('pane-digest');
-digestPane.addEventListener('touchstart', e => { ptStartY = e.touches[0].clientY; }, { passive: true });
-digestPane.addEventListener('touchend', e => {
-  const dy = e.changedTouches[0].clientY - ptStartY;
-  if (dy > 60 && digestPane.scrollTop === 0) renderDigest();
-}, { passive: true });
+(function() {
+  const pane = document.getElementById('pane-digest');
+  const hint = document.getElementById('ptr-hint');
+  let startY = 0, pulling = false;
 
-// ─── BROWSE TAB ──────────────────────────────────────────────────────────────
+  pane.addEventListener('touchstart', e => {
+    if (pane.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true; }
+  }, { passive: true });
+
+  pane.addEventListener('touchmove', e => {
+    if (!pulling) return;
+    if (e.touches[0].clientY - startY > 8) hint.classList.add('show');
+  }, { passive: true });
+
+  pane.addEventListener('touchend', e => {
+    if (!pulling) return;
+    pulling = false;
+    hint.classList.remove('show');
+    if (e.changedTouches[0].clientY - startY > 60) loadDigest();
+  }, { passive: true });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// BROWSE TAB
+// ═══════════════════════════════════════════════════════════════
 let browseOffset = 0;
 let browseCategory = '';
 let browseUnread = false;
 let browseSearch = '';
-let browseSearchTimer;
 
-async function renderBrowse(reset = false) {
-  if (reset) {
-    browseOffset = 0;
-    document.getElementById('browse-list').innerHTML = '';
+function browseReset() {
+  browseOffset = 0;
+  document.getElementById('browse-list').innerHTML = '';
+  document.getElementById('btn-load-more').style.display = 'none';
+}
+
+async function loadBrowse(append = false) {
+  if (!append) {
+    const list = document.getElementById('browse-list');
+    list.innerHTML = '<div class="empty"><p>Loading…</p></div>';
   }
 
   try {
-    const params = new URLSearchParams({ limit: 20, offset: browseOffset });
-    if (browseSearch) params.set('search', browseSearch);
-    if (browseCategory) params.set('category', browseCategory);
-    if (browseUnread) params.set('unread', '1');
+    const p = new URLSearchParams({ limit: PAGE, offset: browseOffset });
+    if (browseSearch) p.set('search', browseSearch);
+    if (browseCategory) p.set('category', browseCategory);
+    if (browseUnread) p.set('unread', '1');
 
-    const links = await api('GET', `/api/links?${params}`);
+    const links = await api('GET', '/api/links?' + p);
     const list = document.getElementById('browse-list');
 
-    if (browseOffset === 0 && links.length === 0) {
+    if (!append) list.innerHTML = '';
+
+    if (!append && links.length === 0) {
       list.innerHTML = `<div class="empty">
-        <div class="empty-icon">🔍</div>
-        <h3>No links found</h3>
-        <p>Try a different search or save some links first.</p>
+        <span class="empty-icon">🔍</span>
+        <h3>No results</h3>
+        <p>${browseSearch ? 'Try a different search term' : 'No links saved yet'}</p>
       </div>`;
-      document.getElementById('load-more-wrap').style.display = 'none';
+      document.getElementById('btn-load-more').style.display = 'none';
       return;
     }
 
-    for (const link of links) list.appendChild(renderCard(link));
+    links.forEach(l => list.appendChild(buildCard(l)));
     browseOffset += links.length;
-    document.getElementById('load-more-wrap').style.display = links.length === 20 ? '' : 'none';
-  } catch (e) { toast('Failed to load links', 'error'); }
+    document.getElementById('btn-load-more').style.display = links.length === PAGE ? '' : 'none';
+  } catch (_) {
+    if (!append) document.getElementById('browse-list').innerHTML =
+      '<div class="empty"><span class="empty-icon">⚠️</span><h3>Failed to load</h3></div>';
+  }
 }
+
+document.getElementById('search-input').addEventListener('input', debounce(e => {
+  browseSearch = e.target.value.trim();
+  browseReset(); loadBrowse();
+}, 300));
+
+document.getElementById('unread-row').addEventListener('click', () => {
+  browseUnread = !browseUnread;
+  document.getElementById('toggle-track').classList.toggle('on', browseUnread);
+  browseReset(); loadBrowse();
+});
+
+document.getElementById('btn-load-more').addEventListener('click', () => loadBrowse(true));
 
 async function loadCategories() {
   try {
     const cats = await api('GET', '/api/categories');
     const row = document.getElementById('filter-row');
-    cats.forEach(({ category, unread }) => {
+
+    cats.forEach(({ category }) => {
+      const existing = row.querySelector(`[data-cat="${CSS.escape(category)}"]`);
+      if (existing) return;
       const btn = document.createElement('button');
-      btn.className = 'filter-chip';
+      btn.className = 'fchip';
       btn.dataset.cat = category;
-      btn.innerHTML = `${category} <span style="opacity:0.6;font-size:10px">${unread > 0 ? `(${unread})` : ''}</span>`;
-      btn.addEventListener('click', () => {
-        browseCategory = btn.dataset.cat;
-        document.querySelectorAll('.filter-chip:not(.unread-toggle)').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        renderBrowse(true);
-      });
+      const dot = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${catColor(category)};margin-right:4px;vertical-align:middle"></span>`;
+      btn.innerHTML = dot + escHtml(category);
       row.appendChild(btn);
     });
-  } catch (e) { /* ignore */ }
+
+    row.querySelectorAll('.fchip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        row.querySelectorAll('.fchip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        browseCategory = btn.dataset.cat;
+        browseReset(); loadBrowse();
+      });
+    });
+  } catch (_) {}
 }
 
-document.getElementById('search-input').addEventListener('input', e => {
-  clearTimeout(browseSearchTimer);
-  browseSearchTimer = setTimeout(() => {
-    browseSearch = e.target.value.trim();
-    renderBrowse(true);
-  }, 300);
-});
-
-document.querySelector('[data-cat=""]').addEventListener('click', () => {
-  browseCategory = '';
-  document.querySelectorAll('.filter-chip:not(.unread-toggle)').forEach(c => c.classList.remove('active'));
-  document.querySelector('[data-cat=""]').classList.add('active');
-  renderBrowse(true);
-});
-
-document.getElementById('unread-toggle').addEventListener('click', function() {
-  browseUnread = !browseUnread;
-  this.classList.toggle('active', browseUnread);
-  renderBrowse(true);
-});
-
-document.getElementById('btn-load-more').addEventListener('click', () => renderBrowse(false));
-
-// ─── Init ────────────────────────────────────────────────────────────────────
-refreshStats();
-loadCategories();
-setInterval(refreshStats, 30000);
-
+// ═══════════════════════════════════════════════════════════════
+// SERVICE WORKER
+// ═══════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+(async function init() {
+  await Promise.all([refreshStats(), loadRecentSaves(), loadCategories()]);
+  setInterval(refreshStats, 30000);
+})();
 </script>
 </body>
 </html>
