@@ -94,11 +94,19 @@ async function callClaude(prompt) {
       const timeout = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Claude API timeout')), 25000)
       );
+      // Pre-fill the assistant turn with '{' to force a raw JSON response
       const response = await Promise.race([
-        client.messages.create({ model, max_tokens: 512, messages: [{ role: 'user', content: prompt }] }),
+        client.messages.create({
+          model,
+          max_tokens: 512,
+          messages: [
+            { role: 'user', content: prompt },
+            { role: 'assistant', content: '{' }
+          ]
+        }),
         timeout
       ]);
-      return response.content[0].text.trim();
+      return '{' + response.content[0].text.trim();
     } catch (err) {
       lastErr = err;
       const msg = err.message || '';
