@@ -917,6 +917,7 @@ function showProcCard(id, url) {
 async function pollLink(id) {
   if (activePolls.has(id)) return;
   let tries = 0;
+  let timedOutWarning = false;
   const iid = setInterval(async () => {
     tries++;
     try {
@@ -937,7 +938,16 @@ async function pollLink(id) {
         return;
       }
     } catch (_) {}
-    if (tries >= 30) {
+    // After 30 tries (60s) show a soft warning but keep polling up to 150 tries (5 min)
+    if (tries === 30 && !timedOutWarning) {
+      timedOutWarning = true;
+      const proc = document.getElementById(`proc-${id}`);
+      if (proc) {
+        const lbl = proc.querySelector('.proc-label');
+        if (lbl) lbl.textContent = 'Still processing… (this can take a minute)';
+      }
+    }
+    if (tries >= 150) {
       clearInterval(iid);
       activePolls.delete(id);
       const proc = document.getElementById(`proc-${id}`);

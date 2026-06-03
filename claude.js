@@ -33,6 +33,11 @@ function extractTag(html, tag) {
 
 async function fetchPageMetadata(url) {
   try {
+    // X.com/Twitter always blocks scrapers — skip the fetch entirely, use URL only
+    if (url.includes('x.com') || url.includes('twitter.com')) {
+      return { title: '', description: '', source: 'x' };
+    }
+
     if (url.includes('reddit.com/r/') && url.includes('/comments/')) {
       const jsonUrl = url.split('?')[0].replace(/\/?$/, '.json');
       const resp = await fetch(jsonUrl, {
