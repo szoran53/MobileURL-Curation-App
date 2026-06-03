@@ -91,16 +91,17 @@ async function callClaude(prompt) {
   let lastErr;
   for (const model of MODELS) {
     try {
-      const response = await client.messages.create({
-        model,
-        max_tokens: 512,
-        messages: [{ role: 'user', content: prompt }]
-      });
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Claude API timeout')), 25000)
+      );
+      const response = await Promise.race([
+        client.messages.create({ model, max_tokens: 512, messages: [{ role: 'user', content: prompt }] }),
+        timeout
+      ]);
       return response.content[0].text.trim();
     } catch (err) {
       lastErr = err;
       const msg = err.message || '';
-      // Only try next model on model-not-found errors
       if (!msg.includes('model') && !msg.includes('not found') && !msg.includes('404')) throw err;
       console.warn(`Model ${model} unavailable, trying next...`);
     }

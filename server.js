@@ -156,11 +156,11 @@ app.get('/api/test-claude', async (req, res) => {
   }
 });
 
-// Reprocess a failed/error link
+// Reprocess a failed or stuck-pending link
 app.post('/api/links/:id/reprocess', async (req, res) => {
   const db = getDB();
-  const link = db.prepare('SELECT id, url FROM links WHERE id = ? AND status = ?').get(req.params.id, 'error');
-  if (!link) return res.status(404).json({ error: 'Link not found or not in error state' });
+  const link = db.prepare(`SELECT id, url FROM links WHERE id = ? AND status IN ('error','pending')`).get(req.params.id);
+  if (!link) return res.status(404).json({ error: 'Link not found or already done' });
   db.prepare(`UPDATE links SET status = 'pending', error_msg = NULL WHERE id = ?`).run(link.id);
   processLink(link.id, link.url).catch(console.error);
   res.json({ ok: true });

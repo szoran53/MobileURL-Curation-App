@@ -929,18 +929,42 @@ async function pollLink(id) {
           if (d.status === 'done') {
             proc.replaceWith(buildCard(d));
           } else {
-            proc.querySelector('.proc-label').textContent = 'Saved (AI tagging unavailable)';
-            proc.querySelector('.spinner').style.display = 'none';
-            setTimeout(() => proc.remove(), 4000);
+            showProcError(proc, id, d.error_msg || 'AI tagging failed');
           }
         }
         refreshStats();
         loadRecentSaves();
+        return;
       }
     } catch (_) {}
-    if (tries >= 30) { clearInterval(iid); activePolls.delete(id); }
+    if (tries >= 30) {
+      clearInterval(iid);
+      activePolls.delete(id);
+      const proc = document.getElementById(`proc-${id}`);
+      if (proc) showProcError(proc, id, 'AI is taking too long — tap Retry');
+    }
   }, 2000);
   activePolls.set(id, iid);
+}
+
+function showProcError(proc, id, msg) {
+  proc.querySelector('.spinner').style.display = 'none';
+  proc.querySelector('.proc-label').textContent = '⚠️ ' + msg;
+  const btn = document.createElement('button');
+  btn.className = 'btn-sm retry-btn';
+  btn.textContent = '↺ Retry AI';
+  btn.style.marginTop = '8px';
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = 'Retrying…';
+    try {
+      await api('POST', `/api/links/${id}/reprocess`);
+      proc.querySelector('.spinner').style.display = '';
+      proc.querySelector('.proc-label').textContent = 'AI is analyzing…';
+      btn.remove();
+      pollLink(id);
+    } catch (_) { btn.disabled = false; btn.textContent = '↺ Retry AI'; }
+  });
+  proc.appendChild(btn);
 }
 
 async function loadRecentSaves() {
