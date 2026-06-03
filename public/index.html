@@ -724,9 +724,11 @@ document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', (
 // ═══════════════════════════════════════════════════════════════
 // STATS
 // ═══════════════════════════════════════════════════════════════
+function localTzOffset() { return -new Date().getTimezoneOffset(); }
+
 async function refreshStats() {
   try {
-    const s = await api('GET', '/api/stats');
+    const s = await api('GET', `/api/stats?date=${toDateStr(new Date())}&tz=${localTzOffset()}`);
     const today = document.getElementById('stat-today');
     const unread = document.getElementById('stat-unread');
     const badge = document.getElementById('nav-badge-digest');
@@ -956,7 +958,7 @@ async function loadDigest() {
   content.innerHTML = '<div class="empty"><div style="margin:0 auto 10px" class="spinner" style="width:24px;height:24px"></div><p>Loading…</p></div>';
 
   try {
-    const data = await api('GET', `/api/digest?date=${digestDate}`);
+    const data = await api('GET', `/api/digest?date=${digestDate}&tz=${localTzOffset()}`);
     document.getElementById('digest-count').textContent = data.total ? `${data.total} link${data.total !== 1 ? 's' : ''}` : '';
     content.innerHTML = '';
 

@@ -30,19 +30,26 @@ app.post('/api/links', async (req, res) => {
 // Poll link status
 app.get('/api/links/:id/status', (req, res) => {
   const db = getDB();
-  const link = db.prepare('SELECT id, status, title, category, tags, summary FROM links WHERE id = ?').get(req.params.id);
+  const link = db.prepare('SELECT id, status, title, category, tags, summary, note FROM links WHERE id = ?').get(req.params.id);
   if (!link) return res.status(404).json({ error: 'Not found' });
   res.json({ ...link, tags: JSON.parse(link.tags || '[]') });
 });
+
+function tzDateExpr(tzMins) {
+  const n = parseInt(tzMins);
+  const safe = isNaN(n) ? 0 : Math.max(-840, Math.min(840, n));
+  return safe === 0 ? 'created_at' : `datetime(created_at, '${safe} minutes')`;
+}
 
 // Get today's digest grouped by category
 app.get('/api/digest', (req, res) => {
   const db = getDB();
   const date = req.query.date || new Date().toISOString().split('T')[0];
+  const expr = tzDateExpr(req.query.tz);
 
   const links = db.prepare(`
     SELECT * FROM links
-    WHERE date(created_at) = ? AND status = 'done'
+    WHERE date(${expr}) = ? AND status = 'done'
     ORDER BY category ASC, created_at DESC
   `).all(date);
 
@@ -112,12 +119,13 @@ app.get('/api/categories', (req, res) => {
 // Stats for the header badge
 app.get('/api/stats', (req, res) => {
   const db = getDB();
-  const today = new Date().toISOString().split('T')[0];
+  const today = req.query.date || new Date().toISOString().split('T')[0];
+  const expr = tzDateExpr(req.query.tz);
   const stats = db.prepare(`
     SELECT
       COUNT(*) as total,
       SUM(CASE WHEN read = 0 AND status = 'done' THEN 1 ELSE 0 END) as unread,
-      SUM(CASE WHEN date(created_at) = ? AND status = 'done' THEN 1 ELSE 0 END) as today
+      SUM(CASE WHEN date(${expr}) = ? AND status = 'done' THEN 1 ELSE 0 END) as today
     FROM links
   `).get(today);
   res.json(stats);
