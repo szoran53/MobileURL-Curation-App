@@ -168,6 +168,14 @@ nav {
   padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.card-error { border-color: rgba(239,68,68,0.3); }
+.card-error-msg {
+  font-size: 0.72rem; color: #f87171;
+  background: rgba(239,68,68,0.08); border-left: 2px solid #ef4444;
+  padding: 3px 7px; border-radius: 3px; margin-bottom: 7px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.retry-btn { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
 .card-summary {
   font-size: 0.8rem; color: var(--muted);
   line-height: 1.45; margin-bottom: 9px;
@@ -756,9 +764,10 @@ function buildCard(link) {
   const tags = Array.isArray(link.tags) ? link.tags : JSON.parse(link.tags || '[]');
   const { label: srcLabel, cls: srcCls } = srcBadgeInfo(link.source, link.url);
   const isPending = link.status === 'pending';
+  const isError = link.status === 'error';
 
   const div = document.createElement('div');
-  div.className = 'card' + (link.read ? ' read' : '');
+  div.className = 'card' + (link.read ? ' read' : '') + (isError ? ' card-error' : '');
   div.dataset.id = link.id;
   div.style.setProperty('--cat-color', color);
 
@@ -769,9 +778,14 @@ function buildCard(link) {
     ? `<div class="card-note">📝 ${escHtml(link.note)}</div>` : '';
   const summaryHtml = link.summary
     ? `<div class="card-summary">${escHtml(link.summary)}</div>` : '';
+  const errorHtml = isError && link.error_msg
+    ? `<div class="card-error-msg">⚠️ ${escHtml(link.error_msg.slice(0, 120))}</div>` : '';
   const tagsHtml = tags.slice(0, 4).map(t => `<span class="tag-chip">${escHtml(t)}</span>`).join('');
+  const retryBtn = isError
+    ? `<button class="btn-sm retry-btn" data-id="${link.id}">↺ Retry AI</button>` : '';
   const actionsHtml = isPending ? '' : `
     <div class="card-actions">
+      ${retryBtn}
       <button class="btn-sm read-btn${link.read ? ' read-done' : ''}" data-id="${link.id}" data-read="${link.read ? 1 : 0}">
         ${link.read ? '✓ Read' : 'Mark read'}
       </button>
@@ -783,6 +797,7 @@ function buildCard(link) {
     <div class="card-title"><a href="${escHtml(link.url)}" target="_blank" rel="noopener noreferrer">${titleText}</a></div>
     ${urlDisplay}
     ${noteHtml}
+    ${errorHtml}
     ${summaryHtml}
     <div class="card-meta">
       <span class="src-badge ${srcCls}">${srcLabel}</span>
@@ -821,6 +836,19 @@ function buildCard(link) {
         toast('Deleted', 'success');
         refreshStats();
       } catch (_) { toast('Delete failed', 'error'); }
+    });
+  }
+
+  const retryBtnEl = div.querySelector('.retry-btn');
+  if (retryBtnEl) {
+    retryBtnEl.addEventListener('click', async () => {
+      retryBtnEl.disabled = true;
+      retryBtnEl.textContent = 'Retrying…';
+      try {
+        await api('POST', `/api/links/${link.id}/reprocess`);
+        toast('Re-queued for AI processing…', 'success');
+        setTimeout(() => { loadRecentSaves(); loadBrowse(); }, 3000);
+      } catch (_) { toast('Retry failed', 'error'); retryBtnEl.disabled = false; retryBtnEl.textContent = '↺ Retry AI'; }
     });
   }
 

@@ -22,12 +22,15 @@ function initDB() {
       note TEXT,
       read INTEGER DEFAULT 0,
       status TEXT DEFAULT 'pending',
+      error_msg TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE INDEX IF NOT EXISTS idx_created ON links(created_at);
     CREATE INDEX IF NOT EXISTS idx_category ON links(category);
     CREATE INDEX IF NOT EXISTS idx_status ON links(status);
   `);
+  // Add error_msg column if upgrading from older schema
+  try { db.exec(`ALTER TABLE links ADD COLUMN error_msg TEXT`); } catch (_) {}
   return db;
 }
 

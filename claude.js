@@ -80,6 +80,34 @@ async function fetchPageMetadata(url) {
   }
 }
 
+const MODELS = [
+  'claude-haiku-4-5-20251001',
+  'claude-3-5-haiku-20241022',
+  'claude-3-haiku-20240307',
+];
+
+async function callClaude(prompt) {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  let lastErr;
+  for (const model of MODELS) {
+    try {
+      const response = await client.messages.create({
+        model,
+        max_tokens: 512,
+        messages: [{ role: 'user', content: prompt }]
+      });
+      return response.content[0].text.trim();
+    } catch (err) {
+      lastErr = err;
+      const msg = err.message || '';
+      // Only try next model on model-not-found errors
+      if (!msg.includes('model') && !msg.includes('not found') && !msg.includes('404')) throw err;
+      console.warn(`Model ${model} unavailable, trying next...`);
+    }
+  }
+  throw lastErr;
+}
+
 async function processLink(id, url) {
   const db = getDB();
 
@@ -92,7 +120,6 @@ async function processLink(id, url) {
 
   try {
     const meta = await fetchPageMetadata(url);
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const prompt = `You are a curator of AI and technology content. Analyze this link and return structured metadata.
 
@@ -111,20 +138,14 @@ Respond with ONLY a valid JSON object (no markdown, no code fences, no extra tex
 
 Tags should be specific (e.g. "Claude 4", "prompt engineering", "AI safety", "open source", "benchmark"). 3-5 tags max.`;
 
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      messages: [{ role: 'user', content: prompt }]
-    });
-
-    const text = response.content[0].text.trim();
+    const text = await callClaude(prompt);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON in Claude response');
 
     const result = JSON.parse(jsonMatch[0]);
 
     db.prepare(`
-      UPDATE links SET title = ?, summary = ?, category = ?, tags = ?, status = 'done'
+      UPDATE links SET title = ?, summary = ?, category = ?, tags = ?, status = 'done', error_msg = NULL
       WHERE id = ?
     `).run(
       result.title || meta.title || url,
@@ -134,8 +155,9 @@ Tags should be specific (e.g. "Claude 4", "prompt engineering", "AI safety", "op
       id
     );
   } catch (err) {
-    console.error('processLink error:', err);
-    db.prepare(`UPDATE links SET status = 'error', title = ? WHERE id = ?`).run(url, id);
+    const msg = String(err.message || err).slice(0, 300);
+    console.error('processLink error:', msg);
+    db.prepare(`UPDATE links SET status = 'error', title = ?, error_msg = ? WHERE id = ?`).run(url, msg, id);
   }
 }
 

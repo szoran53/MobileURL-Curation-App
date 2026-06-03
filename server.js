@@ -131,6 +131,41 @@ app.get('/api/stats', (req, res) => {
   res.json(stats);
 });
 
+// Test Claude connectivity — visit /api/test-claude in browser to diagnose
+app.get('/api/test-claude', async (req, res) => {
+  if (!process.env.ANTHROPIC_API_KEY) return res.json({ ok: false, error: 'ANTHROPIC_API_KEY is not set' });
+  try {
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const models = ['claude-haiku-4-5-20251001', 'claude-3-5-haiku-20241022', 'claude-3-haiku-20240307'];
+    const results = {};
+    for (const model of models) {
+      try {
+        const r = await client.messages.create({
+          model, max_tokens: 10,
+          messages: [{ role: 'user', content: 'Say "ok"' }]
+        });
+        results[model] = 'OK: ' + r.content[0].text.trim();
+      } catch (e) {
+        results[model] = 'ERROR: ' + String(e.message).slice(0, 120);
+      }
+    }
+    res.json({ ok: true, key_prefix: process.env.ANTHROPIC_API_KEY.slice(0, 10) + '…', models: results });
+  } catch (e) {
+    res.json({ ok: false, error: String(e.message) });
+  }
+});
+
+// Reprocess a failed/error link
+app.post('/api/links/:id/reprocess', async (req, res) => {
+  const db = getDB();
+  const link = db.prepare('SELECT id, url FROM links WHERE id = ? AND status = ?').get(req.params.id, 'error');
+  if (!link) return res.status(404).json({ error: 'Link not found or not in error state' });
+  db.prepare(`UPDATE links SET status = 'pending', error_msg = NULL WHERE id = ?`).run(link.id);
+  processLink(link.id, link.url).catch(console.error);
+  res.json({ ok: true });
+});
+
 // Email webhook (Mailgun / SendGrid inbound)
 app.post('/api/email-webhook', async (req, res) => {
   const secret = process.env.EMAIL_WEBHOOK_SECRET;
