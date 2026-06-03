@@ -162,6 +162,12 @@ nav {
   display: block; margin-bottom: 6px;
 }
 
+.card-note {
+  font-size: 0.78rem; color: #a78bfa;
+  background: rgba(139,92,246,0.1); border-left: 2px solid #7c3aed;
+  padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .card-summary {
   font-size: 0.8rem; color: var(--muted);
   line-height: 1.45; margin-bottom: 9px;
@@ -597,14 +603,23 @@ const PAGE = 20;
 // ═══════════════════════════════════════════════════════════════
 function catColor(c) { return CAT_COLORS[c] || '#6B7280'; }
 
-function srcBadgeInfo(source) {
-  if (!source) return { label: '🌐', cls: '' };
-  const s = source.toLowerCase();
+function srcBadgeInfo(source, url) {
+  // Derive display source from the actual URL first, fall back to stored source
+  let s = '';
+  if (url) {
+    try {
+      const host = new URL(url).hostname.toLowerCase();
+      if (host.includes('reddit.com')) s = 'reddit';
+      else if (host.includes('twitter.com') || host.includes('x.com')) s = 'x';
+      else if (host.includes('youtube.com') || host.includes('youtu.be')) s = 'youtube';
+    } catch (_) {}
+  }
+  if (!s) s = (source || '').toLowerCase();
   if (s === 'reddit' || s.includes('reddit')) return { label: 'r/', cls: 'reddit' };
   if (s === 'x' || s === 'twitter' || s.includes('twitter') || s.includes('x.com')) return { label: '𝕏', cls: 'x' };
   if (s === 'youtube' || s.includes('youtube')) return { label: '▶', cls: 'yt' };
-  if (s === 'email') return { label: '✉', cls: '' };
-  return { label: (source.slice(0, 6) || 'web').toUpperCase(), cls: '' };
+  if (s === 'email') return { label: '✉ email', cls: '' };
+  return { label: 'WEB', cls: '' };
 }
 
 function timeAgo(ts) {
@@ -737,7 +752,7 @@ async function refreshStats() {
 function buildCard(link) {
   const color = catColor(link.category);
   const tags = Array.isArray(link.tags) ? link.tags : JSON.parse(link.tags || '[]');
-  const { label: srcLabel, cls: srcCls } = srcBadgeInfo(link.source);
+  const { label: srcLabel, cls: srcCls } = srcBadgeInfo(link.source, link.url);
   const isPending = link.status === 'pending';
 
   const div = document.createElement('div');
@@ -748,6 +763,8 @@ function buildCard(link) {
   const titleText = escHtml(link.title || domainOf(link.url));
   const urlDisplay = (link.title && link.title !== link.url)
     ? `<span class="card-url">${escHtml(truncUrl(link.url))}</span>` : '';
+  const noteHtml = link.note
+    ? `<div class="card-note">📝 ${escHtml(link.note)}</div>` : '';
   const summaryHtml = link.summary
     ? `<div class="card-summary">${escHtml(link.summary)}</div>` : '';
   const tagsHtml = tags.slice(0, 4).map(t => `<span class="tag-chip">${escHtml(t)}</span>`).join('');
@@ -763,6 +780,7 @@ function buildCard(link) {
   div.innerHTML = `
     <div class="card-title"><a href="${escHtml(link.url)}" target="_blank" rel="noopener noreferrer">${titleText}</a></div>
     ${urlDisplay}
+    ${noteHtml}
     ${summaryHtml}
     <div class="card-meta">
       <span class="src-badge ${srcCls}">${srcLabel}</span>
