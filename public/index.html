@@ -3,1191 +3,678 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#7c3aed">
+<meta name="theme-color" content="#0d1117">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="LinkCurator">
-<title>LinkCurator</title>
+<title>Farm Monitor</title>
 <link rel="manifest" href="/manifest.json">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg:         #0f172a;
-  --surface:    #1e293b;
-  --surface2:   #263349;
-  --border:     #334155;
-  --text:       #e2e8f0;
-  --muted:      #94a3b8;
-  --accent:     #7c3aed;
-  --accent-lt:  #a78bfa;
-  --danger:     #ef4444;
-  --success:    #10b981;
-  --radius:     12px;
-  --nav-h:      64px;
-  --safe-b:     env(safe-area-inset-bottom, 0px);
-  --safe-t:     env(safe-area-inset-top, 0px);
+  --bg:        #0d1117;
+  --bg-card:   #161b22;
+  --bg-card2:  #1c2128;
+  --border:    #30363d;
+  --text:      #e6edf3;
+  --dim:       #8b949e;
+  --green:     #3fb950;
+  --yellow:    #d29922;
+  --red:       #f85149;
+  --blue:      #388bfd;
+  --purple:    #bc8cff;
+  --teal:      #2dd4bf;
+  --orange:    #f0883e;
+  --pad: env(safe-area-inset-top, 0px);
+  --bot: env(safe-area-inset-bottom, 0px);
 }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  overscroll-behavior: none;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Menlo', monospace;
+  font-size: 13px;
+  overflow: hidden;
 }
 
-/* ── Layout ──────────────────────────────────────────────────────────── */
-#app {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  max-width: 640px;
-  margin: 0 auto;
-}
+#app { display: flex; flex-direction: column; height: 100%; }
 
-/* ── Header ─────────────────────────────────────────────────────────── */
-header {
-  flex-shrink: 0;
-  background: var(--surface);
+/* ── Header ── */
+#header {
+  padding: calc(var(--pad) + 10px) 14px 8px;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border);
-  padding: calc(var(--safe-t) + 12px) 16px 10px;
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.hdr-brand { display: flex; align-items: center; gap: 8px; flex: 1; }
-.hdr-logo {
-  width: 30px; height: 30px; background: var(--accent);
-  border-radius: 8px; display: flex; align-items: center;
-  justify-content: center; font-size: 16px; flex-shrink: 0;
-}
-header h1 { font-size: 1.05rem; font-weight: 700; color: var(--accent-lt); letter-spacing: -0.02em; }
-
-.hdr-stats { display: flex; gap: 6px; align-items: center; }
-.stat-pill {
-  font-size: 0.7rem; font-weight: 700; padding: 3px 8px;
-  border-radius: 99px; background: var(--surface2);
-  border: 1px solid var(--border); color: var(--muted);
-  white-space: nowrap;
-}
-.stat-pill.accent { background: rgba(124,58,237,0.2); border-color: rgba(124,58,237,0.4); color: var(--accent-lt); }
-
-/* ── Tab panels ──────────────────────────────────────────────────────── */
-#tab-content {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-}
-
-.tab-pane {
-  position: absolute; inset: 0;
-  overflow-y: auto; overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  display: none;
-  padding-bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
-}
-
-.tab-pane.active { display: block; }
-
-/* ── Bottom Nav ──────────────────────────────────────────────────────── */
-nav {
+  min-height: 48px;
   flex-shrink: 0;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  display: flex;
-  padding-bottom: var(--safe-b);
-}
-
-.nav-btn {
-  flex: 1; background: none; border: none;
-  color: var(--muted); padding: 10px 4px 8px;
-  display: flex; flex-direction: column;
-  align-items: center; gap: 3px; cursor: pointer;
-  font-size: 0.65rem; font-weight: 700;
-  letter-spacing: 0.04em; text-transform: uppercase;
-  transition: color 0.15s; position: relative;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.nav-btn svg { width: 22px; height: 22px; stroke-width: 1.8; }
-.nav-btn.active { color: var(--accent-lt); }
-
-.nav-badge {
-  position: absolute; top: 6px; right: calc(50% - 20px);
-  background: var(--danger); color: #fff;
-  font-size: 0.58rem; font-weight: 800;
-  border-radius: 99px; padding: 1px 5px;
-  min-width: 16px; text-align: center; display: none;
-}
-.nav-badge.on { display: block; }
-
-/* ── Cards ───────────────────────────────────────────────────────────── */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
-  margin: 10px 14px 0;
   position: relative;
-  overflow: hidden;
-  transition: border-color 0.15s;
 }
 
-.card::before {
-  content: '';
-  position: absolute; left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--cat-color, var(--accent));
-  border-radius: 3px 0 0 3px;
+#back-btn {
+  background: none; border: 1px solid var(--border); color: var(--teal);
+  padding: 4px 10px; border-radius: 4px; cursor: pointer; font: inherit;
+  font-size: 12px; white-space: nowrap;
 }
+#back-btn:active { background: var(--bg-card2); }
 
-.card.read { opacity: 0.55; }
-
-.card-title {
-  font-size: 0.9rem; font-weight: 600;
-  line-height: 1.35; margin-bottom: 5px;
-}
-
-.card-title a { color: var(--text); text-decoration: none; }
-.card-title a:hover { color: var(--accent-lt); }
-
-.card-url {
-  font-size: 0.68rem; color: var(--muted);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  display: block; margin-bottom: 6px;
-}
-
-.card-note {
-  font-size: 0.78rem; color: #a78bfa;
-  background: rgba(139,92,246,0.1); border-left: 2px solid #7c3aed;
-  padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;
+#header-title {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--teal); text-transform: uppercase; flex: 1;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.card-error { border-color: rgba(239,68,68,0.3); }
-.card-error-msg {
-  font-size: 0.72rem; color: #f87171;
-  background: rgba(239,68,68,0.08); border-left: 2px solid #ef4444;
-  padding: 3px 7px; border-radius: 3px; margin-bottom: 7px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+
+#header-right {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 1px; flex-shrink: 0;
 }
-.retry-btn { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
-.card-summary {
-  font-size: 0.8rem; color: var(--muted);
-  line-height: 1.45; margin-bottom: 9px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+#clock { font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
+#status-line { font-size: 10px; color: var(--dim); white-space: nowrap; }
+
+/* ── Scroll area ── */
+#content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 10px calc(var(--bot) + 10px);
+}
+
+/* ── Node card (summary) ── */
+.node-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  padding: 10px 12px 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.node-card:active { border-color: var(--teal); background: var(--bg-card2); }
+.node-card.dead { border-color: var(--border); opacity: 0.65; }
+
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.node-name { font-weight: 700; font-size: 13px; color: var(--text); }
+.status-badge {
+  font-size: 10px; padding: 2px 7px; border-radius: 3px; font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.status-badge.alive { background: #1a2f1e; color: var(--green); }
+.status-badge.dead  { background: #2a1515; color: var(--red); }
+
+.metric-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+.metric-label { font-size: 10px; color: var(--dim); text-align: right; }
+.metric-val { font-size: 11px; color: var(--dim); white-space: nowrap; }
+
+/* ── Bar ── */
+.bar-track {
+  height: 6px; background: #21262d; border-radius: 3px; overflow: hidden;
+}
+.bar-track.tall { height: 10px; border-radius: 4px; }
+.bar-fill {
+  height: 100%; border-radius: inherit;
+  transition: width 0.6s ease, background-color 0.6s ease;
+}
+
+/* ── Sparkline ── */
+.sparkline-wrap {
+  margin-top: 6px; height: 36px; border-top: 1px solid #21262d;
+  padding-top: 4px;
+}
+.sparkline-wrap svg { width: 100%; height: 30px; display: block; }
+
+/* ── Section panel (detail) ── */
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
   overflow: hidden;
 }
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px;
+  background: var(--bg-card2);
+  border-bottom: 1px solid var(--border);
+}
+.panel-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  color: var(--teal); text-transform: uppercase;
+}
+.panel-val { font-size: 12px; font-weight: 600; }
+.panel-body { padding: 10px 12px; }
 
-.card-meta {
-  display: flex; align-items: center;
-  gap: 5px; flex-wrap: wrap;
+/* ── Detail sparkline (taller) ── */
+.detail-sparkline { margin-bottom: 8px; height: 52px; }
+.detail-sparkline svg { width: 100%; height: 52px; display: block; }
+
+/* ── Per-core grid ── */
+.core-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 8px;
+  margin-top: 6px;
+}
+.core-grid.wide { grid-template-columns: repeat(4, 1fr); }
+.core-item {
+  display: grid;
+  grid-template-columns: 22px 1fr 28px;
+  align-items: center;
+  gap: 4px;
+}
+.core-idx { font-size: 9px; color: var(--dim); text-align: right; }
+.core-pct { font-size: 9px; color: var(--dim); }
+
+/* ── Processes table ── */
+.proc-table { width: 100%; border-collapse: collapse; }
+.proc-table th {
+  text-align: left; font-size: 10px; color: var(--dim);
+  padding: 3px 4px; border-bottom: 1px solid var(--border);
+  font-weight: 600; letter-spacing: 0.05em;
+}
+.proc-table td { padding: 3px 4px; font-size: 11px; }
+.proc-table tr:nth-child(even) td { background: #1a1f26; }
+.proc-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proc-cpu { color: var(--green); font-variant-numeric: tabular-nums; }
+.proc-mem { color: var(--purple); font-variant-numeric: tabular-nums; }
+
+/* ── Meta row (temp, load, freq) ── */
+.meta-row {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin-top: 6px; font-size: 11px; color: var(--dim);
+}
+.meta-tag { display: flex; align-items: center; gap: 3px; }
+.meta-tag .hi { color: var(--red); }
+.meta-tag .med { color: var(--yellow); }
+.meta-tag .ok { color: var(--green); }
+
+/* ── Empty / error states ── */
+.empty-state {
+  text-align: center; padding: 60px 20px; color: var(--dim);
+}
+.empty-state .big { font-size: 32px; margin-bottom: 12px; }
+.empty-state p { font-size: 12px; line-height: 1.7; }
+.empty-state code {
+  background: var(--bg-card2); padding: 2px 6px; border-radius: 3px;
+  color: var(--teal); font: inherit;
 }
 
-.src-badge {
-  font-size: 0.65rem; font-weight: 700;
-  padding: 2px 7px; border-radius: 99px;
-  background: var(--surface2); color: var(--muted);
-  border: 1px solid var(--border);
-  white-space: nowrap; flex-shrink: 0;
-}
+.dead-msg { font-size: 11px; color: var(--red); padding: 4px 0; }
 
-.src-badge.reddit { background: #ff4500; color: #fff; border-color: #ff4500; }
-.src-badge.x      { background: #000;    color: #fff; border-color: #333; }
-.src-badge.yt     { background: #ff0000; color: #fff; border-color: #ff0000; }
-
-.tag-chip {
-  font-size: 0.62rem; font-weight: 600;
-  padding: 2px 7px; border-radius: 99px;
-  background: rgba(124,58,237,0.14);
-  color: var(--accent-lt);
-  border: 1px solid rgba(124,58,237,0.28);
-  white-space: nowrap;
-}
-
-.card-time { font-size: 0.68rem; color: var(--muted); margin-left: auto; white-space: nowrap; }
-
-.card-actions { display: flex; gap: 6px; margin-top: 10px; align-items: center; }
-
-.btn-sm {
-  font-size: 0.72rem; font-weight: 700; padding: 5px 11px;
-  border-radius: 8px; border: 1px solid var(--border);
-  background: var(--surface2); color: var(--muted);
-  cursor: pointer; transition: background 0.15s, color 0.15s;
-  -webkit-tap-highlight-color: transparent; white-space: nowrap;
-}
-.btn-sm:active { opacity: 0.7; }
-.btn-sm.read-done { background: rgba(16,185,129,0.12); color: var(--success); border-color: rgba(16,185,129,0.3); }
-.btn-sm.del      { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.25); }
-.btn-sm.open     { background: rgba(124,58,237,0.12); color: var(--accent-lt); border-color: rgba(124,58,237,0.28); margin-left: auto; text-decoration: none; display: inline-block; }
-
-/* ── SAVE TAB ────────────────────────────────────────────────────────── */
-.save-hero {
-  margin: 16px 14px 4px;
-  background: linear-gradient(135deg, rgba(124,58,237,0.14) 0%, rgba(49,130,206,0.06) 100%);
-  border: 1px solid rgba(124,58,237,0.28);
-  border-radius: 16px; padding: 18px;
-}
-
-.save-hero h2 { font-size: 0.9rem; font-weight: 700; color: var(--accent-lt); margin-bottom: 14px; }
-
-.url-row { display: flex; gap: 8px; margin-bottom: 10px; }
-
-.url-input {
-  flex: 1; min-width: 0;
-  background: var(--bg); border: 1.5px solid var(--border);
-  border-radius: 10px; padding: 11px 13px;
-  color: var(--text); font-size: 0.95rem; outline: none;
-  transition: border-color 0.15s;
-}
-.url-input:focus { border-color: var(--accent); }
-.url-input::placeholder { color: var(--muted); }
-
-.btn-paste {
+/* ── Pulse dot ── */
+.pulse {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
   flex-shrink: 0;
-  background: var(--surface2); border: 1.5px solid var(--border);
-  border-radius: 10px; color: var(--accent-lt);
-  font-size: 0.78rem; font-weight: 700; padding: 0 13px;
-  cursor: pointer; transition: background 0.15s;
-  -webkit-tap-highlight-color: transparent;
 }
-.btn-paste:active { background: var(--border); }
-
-.note-input {
-  width: 100%; background: var(--bg);
-  border: 1.5px solid var(--border); border-radius: 10px;
-  padding: 10px 13px; color: var(--text);
-  font-size: 0.85rem; outline: none; resize: none;
-  font-family: inherit; transition: border-color 0.15s;
-  margin-bottom: 12px;
-}
-.note-input:focus { border-color: var(--accent); }
-.note-input::placeholder { color: var(--muted); }
-
-.btn-save {
-  width: 100%; background: var(--accent); border: none;
-  border-radius: 10px; color: #fff; font-size: 1rem;
-  font-weight: 700; padding: 13px; cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  -webkit-tap-highlight-color: transparent; letter-spacing: -0.01em;
-}
-.btn-save:active { transform: scale(0.98); }
-.btn-save:hover { background: #6d28d9; }
-.btn-save:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
-
-/* Processing card */
-.proc-card {
-  background: var(--surface); border: 1px dashed var(--border);
-  border-radius: var(--radius); padding: 14px;
-  margin: 10px 14px 0; display: flex; align-items: flex-start; gap: 10px;
-}
-.spinner {
-  width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px;
-  border: 2px solid var(--border); border-top-color: var(--accent-lt);
-  border-radius: 50%; animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.proc-url { font-size: 0.78rem; color: var(--muted); word-break: break-all; }
-.proc-label { font-size: 0.72rem; color: var(--accent-lt); margin-top: 3px; font-weight: 600; }
-
-/* Section label */
-.section-label {
-  font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; color: var(--muted);
-  padding: 16px 14px 4px;
+.pulse.alive { background: var(--green); box-shadow: 0 0 0 0 rgba(63,185,80,0.5);
+  animation: pulse-a 2s infinite; }
+.pulse.dead  { background: var(--red); }
+@keyframes pulse-a {
+  0%   { box-shadow: 0 0 0 0 rgba(63,185,80,0.5); }
+  70%  { box-shadow: 0 0 0 5px rgba(63,185,80,0); }
+  100% { box-shadow: 0 0 0 0 rgba(63,185,80,0); }
 }
 
-/* ── DIGEST TAB ──────────────────────────────────────────────────────── */
-.date-nav-bar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 14px 14px 6px; position: sticky; top: 0;
-  background: var(--bg); z-index: 4;
-}
+/* ── Temp color helpers ── */
+.t-ok  { color: var(--green); }
+.t-med { color: var(--yellow); }
+.t-hi  { color: var(--red); }
 
-.nav-arrow {
-  width: 36px; height: 36px; flex-shrink: 0;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 9px; display: flex; align-items: center;
-  justify-content: center; cursor: pointer;
-  transition: background 0.15s; -webkit-tap-highlight-color: transparent;
-}
-.nav-arrow:hover, .nav-arrow:active { background: var(--border); }
-.nav-arrow:disabled { opacity: 0.35; cursor: not-allowed; }
-.nav-arrow svg { width: 18px; height: 18px; stroke-width: 2; color: var(--text); }
-
-.date-display {
-  flex: 1; text-align: center;
-  font-size: 0.95rem; font-weight: 700; line-height: 1.2;
-}
-
-.today-chip {
-  display: inline-block; font-size: 0.6rem; font-weight: 700;
-  background: rgba(124,58,237,0.2); color: var(--accent-lt);
-  border: 1px solid rgba(124,58,237,0.3); border-radius: 99px;
-  padding: 1px 7px; margin-left: 5px; vertical-align: middle;
-}
-
-.digest-count { font-size: 0.72rem; color: var(--muted); }
-
-.ptr-hint {
-  text-align: center; padding: 6px; font-size: 0.72rem;
-  color: var(--muted); display: none;
-}
-.ptr-hint.show { display: block; }
-
-.cat-section { margin-top: 4px; }
-
-.cat-header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 14px 14px 6px; position: sticky; top: 70px; z-index: 3;
-  background: var(--bg);
-}
-.cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.cat-name { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; flex: 1; }
-.cat-count {
-  font-size: 0.68rem; color: var(--muted);
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 99px; padding: 1px 8px;
-}
-
-/* ── BROWSE TAB ──────────────────────────────────────────────────────── */
-.browse-sticky {
-  position: sticky; top: 0; z-index: 5;
-  background: var(--bg); padding: 12px 14px 6px;
-}
-
-.search-wrap { position: relative; margin-bottom: 10px; }
-.search-icon {
-  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
-  color: var(--muted); pointer-events: none;
-}
-.search-icon svg { width: 15px; height: 15px; stroke-width: 2; }
-
-.search-input {
-  width: 100%; background: var(--surface);
-  border: 1.5px solid var(--border); border-radius: 10px;
-  padding: 10px 13px 10px 34px; color: var(--text);
-  font-size: 0.9rem; outline: none; transition: border-color 0.15s;
-}
-.search-input:focus { border-color: var(--accent); }
-.search-input::placeholder { color: var(--muted); }
-
-.filter-scroll {
-  display: flex; gap: 6px; overflow-x: auto;
-  padding-bottom: 2px; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.filter-scroll::-webkit-scrollbar { display: none; }
-
-.fchip {
-  flex-shrink: 0;
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 99px; padding: 5px 12px;
-  font-size: 0.72rem; font-weight: 600; color: var(--muted);
-  cursor: pointer; white-space: nowrap; transition: all 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.fchip.active {
-  background: var(--accent); border-color: var(--accent); color: #fff;
-}
-
-.unread-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 0 4px; cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.toggle-track {
-  width: 38px; height: 22px; flex-shrink: 0;
-  background: var(--surface2); border: 1.5px solid var(--border);
-  border-radius: 99px; position: relative;
-  transition: background 0.2s, border-color 0.2s;
-}
-.toggle-track.on { background: var(--accent); border-color: var(--accent); }
-.toggle-thumb {
-  position: absolute; top: 2px; left: 2px;
-  width: 14px; height: 14px; background: #fff;
-  border-radius: 50%; transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
-}
-.toggle-track.on .toggle-thumb { transform: translateX(16px); }
-.unread-label { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
-
-.load-more-btn {
-  display: block; width: calc(100% - 28px); margin: 12px 14px;
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 10px; color: var(--accent-lt);
-  font-size: 0.88rem; font-weight: 700; padding: 12px;
-  cursor: pointer; text-align: center;
-  -webkit-tap-highlight-color: transparent; transition: background 0.15s;
-}
-.load-more-btn:hover, .load-more-btn:active { background: var(--surface2); }
-.load-more-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* ── Empty state ─────────────────────────────────────────────────────── */
-.empty {
-  text-align: center; padding: 56px 24px; color: var(--muted);
-}
-.empty-icon { font-size: 3rem; display: block; margin-bottom: 14px; }
-.empty h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-.empty p { font-size: 0.85rem; line-height: 1.5; }
-
-/* ── Toast ───────────────────────────────────────────────────────────── */
-#toasts {
-  position: fixed;
-  bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
-  left: 50%; transform: translateX(-50%);
-  z-index: 9999;
-  display: flex; flex-direction: column; gap: 6px;
-  pointer-events: none;
-  width: min(380px, calc(100vw - 28px));
-}
-
-.toast {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 11px 16px;
-  font-size: 0.82rem; font-weight: 600; color: var(--text);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.45);
-  animation: toast-in 0.22s ease;
-}
-.toast.success { border-color: rgba(16,185,129,0.45); color: #6ee7b7; }
-.toast.error   { border-color: rgba(239,68,68,0.45);  color: #fca5a5; }
-
-@keyframes toast-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Scrollbar */
-.tab-pane::-webkit-scrollbar { width: 3px; }
-.tab-pane::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+/* ── Divider ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
 </style>
 </head>
 <body>
 <div id="app">
-
-  <!-- ── Header ──────────────────────────────────────────────────────── -->
-  <header>
-    <div class="hdr-brand">
-      <div class="hdr-logo">🔗</div>
-      <h1>LinkCurator</h1>
+  <div id="header">
+    <button id="back-btn" style="display:none" onclick="showSummary()">← BACK</button>
+    <div id="header-title">FARM MONITOR</div>
+    <div id="header-right">
+      <span id="clock"></span>
+      <span id="status-line">connecting…</span>
     </div>
-    <div class="hdr-stats">
-      <span class="stat-pill" id="stat-today" style="display:none"></span>
-      <span class="stat-pill accent" id="stat-unread" style="display:none"></span>
-    </div>
-  </header>
-
-  <!-- ── Panels ──────────────────────────────────────────────────────── -->
-  <div id="tab-content">
-
-    <!-- SAVE -->
-    <div class="tab-pane active" id="pane-save">
-      <div class="save-hero">
-        <h2>Save a Link</h2>
-        <div class="url-row">
-          <input class="url-input" id="url-input" type="url"
-            placeholder="https://…" autocomplete="off"
-            autocorrect="off" autocapitalize="none" spellcheck="false">
-          <button class="btn-paste" id="btn-paste">Paste</button>
-        </div>
-        <textarea class="note-input" id="note-input" rows="2"
-          placeholder="Optional note…"></textarea>
-        <button class="btn-save" id="btn-save">Save &amp; Analyze</button>
-      </div>
-
-      <div id="proc-area"></div>
-
-      <div class="section-label">Recent Saves</div>
-      <div id="recent-saves"></div>
-    </div>
-
-    <!-- DIGEST -->
-    <div class="tab-pane" id="pane-digest">
-      <div class="ptr-hint" id="ptr-hint">↓ Pull down to refresh</div>
-      <div class="date-nav-bar">
-        <button class="nav-arrow" id="digest-prev" title="Previous day">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <div>
-          <div class="date-display" id="digest-date-label">Today</div>
-          <div class="digest-count" id="digest-count"></div>
-        </div>
-        <button class="nav-arrow" id="digest-next" title="Next day">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-      </div>
-      <div id="digest-content"></div>
-    </div>
-
-    <!-- BROWSE -->
-    <div class="tab-pane" id="pane-browse">
-      <div class="browse-sticky">
-        <div class="search-wrap">
-          <span class="search-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </span>
-          <input class="search-input" id="search-input" type="search"
-            placeholder="Search links…" autocomplete="off">
-        </div>
-        <div class="filter-scroll" id="filter-row">
-          <button class="fchip active" data-cat="">All</button>
-        </div>
-        <label class="unread-row" id="unread-row">
-          <div class="toggle-track" id="toggle-track"></div>
-          <span class="unread-label">Unread only</span>
-        </label>
-      </div>
-      <div id="browse-list"></div>
-      <button class="load-more-btn" id="btn-load-more" style="display:none">Load more</button>
-    </div>
-
-  </div><!-- /tab-content -->
-
-  <!-- ── Bottom Nav ───────────────────────────────────────────────────── -->
-  <nav>
-    <button class="nav-btn active" data-tab="save">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-        <polyline points="17 21 17 13 7 13 7 21"/>
-        <polyline points="7 3 7 8 15 8"/>
-      </svg>
-      Save
-    </button>
-    <button class="nav-btn" data-tab="digest">
-      <span class="nav-badge" id="nav-badge-digest"></span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-        <line x1="3" y1="10" x2="21" y2="10"/>
-      </svg>
-      Digest
-    </button>
-    <button class="nav-btn" data-tab="browse">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
-        <line x1="8" y1="18" x2="21" y2="18"/>
-        <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
-        <line x1="3" y1="18" x2="3.01" y2="18"/>
-      </svg>
-      Browse
-    </button>
-  </nav>
-
-</div><!-- /app -->
-
-<div id="toasts"></div>
+  </div>
+  <div id="content"></div>
+</div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// CONSTANTS
-// ═══════════════════════════════════════════════════════════════
-const CAT_COLORS = {
-  'Claude & Anthropic':    '#8B5CF6',
-  'AI Research & Papers':  '#3B82F6',
-  'AI Tools & Products':   '#10B981',
-  'Community Discussions': '#F59E0B',
-  'AI Safety & Ethics':    '#EF4444',
-  'AI in Industry':        '#06B6D4',
-  'Tutorials & How-tos':   '#6366F1',
-  'Miscellaneous':         '#6B7280',
-};
+// ── State ──────────────────────────────────────────────────────────────────
+let nodes = [];
+let currentNodeId = null;
+let summaryTimer = null;
+let detailTimer = null;
+let lastUpdate = null;
 
-const CAT_ORDER = [
-  'Claude & Anthropic', 'AI Research & Papers', 'AI Tools & Products',
-  'Community Discussions', 'AI Safety & Ethics', 'AI in Industry',
-  'Tutorials & How-tos', 'Miscellaneous',
-];
+// ── Utilities ──────────────────────────────────────────────────────────────
+function fmtBytes(b) {
+  if (!b) return '0B';
+  if (b >= 1099511627776) return (b / 1099511627776).toFixed(1) + 'T';
+  if (b >= 1073741824)    return (b / 1073741824).toFixed(1) + 'G';
+  if (b >= 1048576)       return (b / 1048576).toFixed(1) + 'M';
+  return b + 'B';
+}
 
-const PAGE = 20;
+function usageColor(pct) {
+  if (pct == null) return '#555';
+  if (pct < 60) return 'var(--green)';
+  if (pct < 80) return 'var(--yellow)';
+  return 'var(--red)';
+}
 
-// ═══════════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════════
-function catColor(c) { return CAT_COLORS[c] || '#6B7280'; }
+function tempColor(t) {
+  if (t == null) return '';
+  if (t < 60) return 't-ok';
+  if (t < 80) return 't-med';
+  return 't-hi';
+}
 
-function srcBadgeInfo(source, url) {
-  // Derive display source from the actual URL first, fall back to stored source
-  let s = '';
-  if (url) {
-    try {
-      const host = new URL(url).hostname.toLowerCase();
-      if (host.includes('reddit.com')) s = 'reddit';
-      else if (host.includes('twitter.com') || host.includes('x.com')) s = 'x';
-      else if (host.includes('youtube.com') || host.includes('youtu.be')) s = 'youtube';
-    } catch (_) {}
+function fmtAge(ts) {
+  if (!ts) return '—';
+  const s = Math.round((Date.now() - ts) / 1000);
+  if (s < 5)  return 'now';
+  if (s < 60) return s + 's ago';
+  return Math.round(s / 60) + 'm ago';
+}
+
+function fmtPct(v) {
+  return v != null ? v.toFixed(1) + '%' : '—';
+}
+
+// ── Sparkline ─────────────────────────────────────────────────────────────
+function sparkline(data, color, h = 30) {
+  if (!data || data.length < 2) return '';
+  const w = 200, pad = 1;
+  const n = data.length;
+  const xStep = (w - pad * 2) / Math.max(n - 1, 1);
+
+  const pts = data.map((v, i) => {
+    const x = pad + i * xStep;
+    const y = pad + (h - pad * 2) * (1 - Math.min(v, 100) / 100);
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  });
+
+  const last = pts[pts.length - 1].split(',');
+  const polyFill = '0,' + h + ' ' + pts.join(' ') + ' ' + (pad + (n - 1) * xStep).toFixed(1) + ',' + h;
+
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <polygon points="${polyFill}" fill="${color}" fill-opacity="0.12"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="2.5" fill="${color}"/>
+  </svg>`;
+}
+
+// ── Bar HTML ───────────────────────────────────────────────────────────────
+function bar(pct, color, tall = false) {
+  const w = Math.min(Math.max(pct || 0, 0), 100).toFixed(1);
+  return `<div class="bar-track${tall ? ' tall' : ''}">
+    <div class="bar-fill" style="width:${w}%;background:${color || usageColor(pct)}"></div>
+  </div>`;
+}
+
+// ── Summary view ───────────────────────────────────────────────────────────
+function renderSummary(nodes) {
+  const el = document.getElementById('content');
+  if (!nodes.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="big">🖥️</div>
+      <p>No nodes configured.<br><br>
+      Set the <code>FARM_NODES</code> environment variable:<br>
+      <code>gpu-node-1:100.64.0.1,cpu-node-1:100.64.0.5</code><br><br>
+      Then install the agent on each node with <code>agent/install_agent.sh</code></p>
+    </div>`;
+    return;
   }
-  if (!s) s = (source || '').toLowerCase();
-  if (s === 'reddit' || s.includes('reddit')) return { label: 'r/', cls: 'reddit' };
-  if (s === 'x' || s === 'twitter' || s.includes('twitter') || s.includes('x.com')) return { label: '𝕏', cls: 'x' };
-  if (s === 'youtube' || s.includes('youtube')) return { label: '▶', cls: 'yt' };
-  if (s === 'email') return { label: '✉ email', cls: '' };
-  return { label: 'WEB', cls: '' };
-}
 
-function timeAgo(ts) {
-  const diff = Date.now() - new Date(ts).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d ago`;
-  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+  el.innerHTML = nodes.map(n => renderNodeCard(n)).join('');
 
-function toDateStr(d) {
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
-}
-
-function addDays(iso, n) {
-  const [y, m, d] = iso.split('-').map(Number);
-  const date = new Date(y, m - 1, d + n);
-  return toDateStr(date);
-}
-
-function fmtDateLabel(iso) {
-  const today = toDateStr(new Date());
-  if (iso === today) return 'Today';
-  const yest = addDays(today, -1);
-  if (iso === yest) return 'Yesterday';
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric'
+  // Attach click listeners
+  el.querySelectorAll('.node-card[data-id]').forEach(card => {
+    card.addEventListener('click', () => showDetail(card.dataset.id));
   });
 }
 
-function domainOf(url) {
-  try { return new URL(url).hostname.replace(/^www\./, ''); }
-  catch { return url.slice(0, 40); }
-}
+function renderNodeCard(n) {
+  const alive = n.alive;
+  const m = n.metrics;
+  const hist = n.history || {};
 
-function truncUrl(url) {
-  try {
-    const u = new URL(url);
-    const path = u.pathname.length > 32 ? u.pathname.slice(0, 32) + '…' : u.pathname;
-    return u.hostname.replace(/^www\./, '') + path;
-  } catch { return url.slice(0, 50); }
-}
+  let body = '';
+  if (!alive) {
+    body = `<div class="dead-msg">⚠ Unreachable${n.error ? ' — ' + n.error : ''}</div>`;
+  } else if (m) {
+    const cpu = m.cpu || {};
+    const mem = m.memory || {};
+    const gpus = m.gpus || [];
+    const cpuPct = cpu.overall ?? 0;
+    const memPct = mem.percent ?? 0;
 
-function escHtml(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function debounce(fn, ms) {
-  let t;
-  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
-}
-
-async function api(method, path, body) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body !== undefined) opts.body = JSON.stringify(body);
-  const r = await fetch(path, opts);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════════════════════════
-function toast(msg, type = '', dur = 3000) {
-  const c = document.getElementById('toasts');
-  const el = document.createElement('div');
-  el.className = 'toast' + (type ? ' ' + type : '');
-  el.textContent = msg;
-  c.appendChild(el);
-  setTimeout(() => {
-    el.style.transition = 'opacity 0.3s';
-    el.style.opacity = '0';
-    setTimeout(() => el.remove(), 320);
-  }, dur);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TAB ROUTING
-// ═══════════════════════════════════════════════════════════════
-let activeTab = 'save';
-
-function switchTab(name) {
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
-  activeTab = name;
-  if (name === 'digest') loadDigest();
-  if (name === 'browse') { browseReset(); loadBrowse(); }
-}
-
-document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
-
-// ═══════════════════════════════════════════════════════════════
-// STATS
-// ═══════════════════════════════════════════════════════════════
-function localTzOffset() { return -new Date().getTimezoneOffset(); }
-
-async function refreshStats() {
-  try {
-    const s = await api('GET', `/api/stats?date=${toDateStr(new Date())}&tz=${localTzOffset()}`);
-    const today = document.getElementById('stat-today');
-    const unread = document.getElementById('stat-unread');
-    const badge = document.getElementById('nav-badge-digest');
-
-    today.textContent = `${s.today || 0} today`;
-    today.style.display = '';
-
-    if ((s.unread || 0) > 0) {
-      unread.textContent = `${s.unread} unread`;
-      unread.style.display = '';
-      badge.textContent = s.unread;
-      badge.classList.add('on');
-    } else {
-      unread.style.display = 'none';
-      badge.classList.remove('on');
-    }
-  } catch (_) {}
-}
-
-// ═══════════════════════════════════════════════════════════════
-// CARD RENDERING + EVENTS
-// ═══════════════════════════════════════════════════════════════
-function buildCard(link) {
-  const color = catColor(link.category);
-  const tags = Array.isArray(link.tags) ? link.tags : JSON.parse(link.tags || '[]');
-  const { label: srcLabel, cls: srcCls } = srcBadgeInfo(link.source, link.url);
-  const isPending = link.status === 'pending';
-  const isError = link.status === 'error';
-
-  const div = document.createElement('div');
-  div.className = 'card' + (link.read ? ' read' : '') + (isError ? ' card-error' : '');
-  div.dataset.id = link.id;
-  div.style.setProperty('--cat-color', color);
-
-  const titleText = escHtml(link.title || domainOf(link.url));
-  const urlDisplay = (link.title && link.title !== link.url)
-    ? `<span class="card-url">${escHtml(truncUrl(link.url))}</span>` : '';
-  const noteHtml = link.note
-    ? `<div class="card-note">📝 ${escHtml(link.note)}</div>` : '';
-  const summaryHtml = link.summary
-    ? `<div class="card-summary">${escHtml(link.summary)}</div>` : '';
-  const errorHtml = isError && link.error_msg
-    ? `<div class="card-error-msg">⚠️ ${escHtml(link.error_msg.slice(0, 120))}</div>` : '';
-  const tagsHtml = tags.slice(0, 4).map(t => `<span class="tag-chip">${escHtml(t)}</span>`).join('');
-  const retryBtn = isError
-    ? `<button class="btn-sm retry-btn" data-id="${link.id}">↺ Retry AI</button>` : '';
-  const actionsHtml = isPending ? '' : `
-    <div class="card-actions">
-      ${retryBtn}
-      <button class="btn-sm read-btn${link.read ? ' read-done' : ''}" data-id="${link.id}" data-read="${link.read ? 1 : 0}">
-        ${link.read ? '✓ Read' : 'Mark read'}
-      </button>
-      <button class="btn-sm del del-btn" data-id="${link.id}">Delete</button>
-      <a class="btn-sm open" href="${escHtml(link.url)}" target="_blank" rel="noopener noreferrer">Open ↗</a>
+    body += `<div class="metric-row">
+      <span class="metric-label">CPU</span>
+      ${bar(cpuPct)}
+      <span class="metric-val" style="color:${usageColor(cpuPct)}">${fmtPct(cpuPct)}</span>
     </div>`;
 
-  div.innerHTML = `
-    <div class="card-title"><a href="${escHtml(link.url)}" target="_blank" rel="noopener noreferrer">${titleText}</a></div>
-    ${urlDisplay}
-    ${noteHtml}
-    ${errorHtml}
-    ${summaryHtml}
-    <div class="card-meta">
-      <span class="src-badge ${srcCls}">${srcLabel}</span>
-      ${tagsHtml}
-      <span class="card-time">${timeAgo(link.created_at)}</span>
-    </div>
-    ${actionsHtml}
-  `;
+    body += `<div class="metric-row">
+      <span class="metric-label">MEM</span>
+      ${bar(memPct, 'var(--purple)')}
+      <span class="metric-val" style="color:var(--purple)">${fmtBytes(mem.used)}/${fmtBytes(mem.total)}</span>
+    </div>`;
 
-  // Read toggle
-  const readBtn = div.querySelector('.read-btn');
-  if (readBtn) {
-    readBtn.addEventListener('click', async () => {
-      const isRead = readBtn.dataset.read === '1';
-      try {
-        await api('PATCH', `/api/links/${link.id}`, { read: !isRead });
-        link.read = !isRead;
-        div.classList.toggle('read', !isRead);
-        readBtn.dataset.read = isRead ? '0' : '1';
-        readBtn.textContent = isRead ? 'Mark read' : '✓ Read';
-        readBtn.classList.toggle('read-done', !isRead);
-        refreshStats();
-      } catch (_) { toast('Update failed', 'error'); }
+    gpus.forEach(g => {
+      const gPct = g.util_pct ?? 0;
+      const gMemPct = g.mem_total_mb ? (g.mem_used_mb / g.mem_total_mb) * 100 : 0;
+      const shortName = (g.name || 'GPU').replace('NVIDIA GeForce ', '').replace('NVIDIA ', '');
+      const label = gpus.length > 1 ? 'GPU' + g.index : 'GPU';
+      body += `<div class="metric-row">
+        <span class="metric-label">${label}</span>
+        ${bar(gPct, 'var(--blue)')}
+        <span class="metric-val" style="color:var(--blue)">${fmtPct(gPct)}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label" style="font-size:9px">${shortName}</span>
+        ${bar(gMemPct, 'var(--teal)')}
+        <span class="metric-val" style="color:var(--teal)">${fmtBytes((g.mem_used_mb||0)*1048576)}/${fmtBytes((g.mem_total_mb||0)*1048576)}</span>
+      </div>`;
     });
-  }
 
-  // Delete
-  const delBtn = div.querySelector('.del-btn');
-  if (delBtn) {
-    delBtn.addEventListener('click', async () => {
-      try {
-        await api('DELETE', `/api/links/${link.id}`);
-        div.style.transition = 'opacity 0.2s';
-        div.style.opacity = '0';
-        setTimeout(() => div.remove(), 220);
-        toast('Deleted', 'success');
-        refreshStats();
-      } catch (_) { toast('Delete failed', 'error'); }
-    });
-  }
+    // Footer meta: temp + load
+    const metas = [];
+    if (cpu.temp_c != null) metas.push(`<span class="meta-tag"><span class="${tempColor(cpu.temp_c)}">${cpu.temp_c}°C</span></span>`);
+    if (cpu.load_avg) metas.push(`<span class="meta-tag" style="color:var(--dim)">load ${cpu.load_avg[0]}</span>`);
+    if (cpu.count)   metas.push(`<span class="meta-tag" style="color:var(--dim)">${cpu.count}c</span>`);
+    if (metas.length) body += `<div class="meta-row" style="margin-top:5px">${metas.join('')}</div>`;
 
-  const retryBtnEl = div.querySelector('.retry-btn');
-  if (retryBtnEl) {
-    retryBtnEl.addEventListener('click', async () => {
-      retryBtnEl.disabled = true;
-      retryBtnEl.textContent = 'Retrying…';
-      try {
-        await api('POST', `/api/links/${link.id}/reprocess`);
-        toast('Re-queued for AI processing…', 'success');
-        setTimeout(() => { loadRecentSaves(); loadBrowse(); }, 3000);
-      } catch (_) { toast('Retry failed', 'error'); retryBtnEl.disabled = false; retryBtnEl.textContent = '↺ Retry AI'; }
-    });
-  }
-
-  return div;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SAVE TAB
-// ═══════════════════════════════════════════════════════════════
-const activePolls = new Map();
-
-document.getElementById('btn-paste').addEventListener('click', async () => {
-  try {
-    const text = await navigator.clipboard.readText();
-    const m = text.match(/https?:\/\/\S+/);
-    const inp = document.getElementById('url-input');
-    inp.value = m ? m[0].replace(/[.,;!?)]+$/, '') : text.trim();
-    inp.focus();
-  } catch (_) {
-    toast('Clipboard access denied — paste manually', 'error');
-  }
-});
-
-document.getElementById('url-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('btn-save').click();
-});
-
-document.getElementById('btn-save').addEventListener('click', async () => {
-  const url = document.getElementById('url-input').value.trim();
-  const note = document.getElementById('note-input').value.trim();
-  if (!url.startsWith('http')) { toast('Enter a valid URL starting with http', 'error'); return; }
-
-  const btn = document.getElementById('btn-save');
-  btn.disabled = true; btn.textContent = 'Saving…';
-
-  try {
-    const data = await api('POST', '/api/links', { url, note: note || undefined });
-    document.getElementById('url-input').value = '';
-    document.getElementById('note-input').value = '';
-    toast('Saved! AI is analyzing…', 'success');
-    showProcCard(data.id, url);
-    pollLink(data.id);
-    refreshStats();
-  } catch (_) {
-    toast('Failed to save link', 'error');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Save & Analyze';
-  }
-});
-
-function showProcCard(id, url) {
-  const area = document.getElementById('proc-area');
-  const div = document.createElement('div');
-  div.className = 'proc-card';
-  div.id = `proc-${id}`;
-  div.innerHTML = `
-    <div class="spinner"></div>
-    <div>
-      <div class="proc-url">${escHtml(truncUrl(url))}</div>
-      <div class="proc-label">AI is analyzing…</div>
-    </div>
-  `;
-  area.prepend(div);
-}
-
-async function pollLink(id) {
-  if (activePolls.has(id)) return;
-  let tries = 0;
-  let timedOutWarning = false;
-  const iid = setInterval(async () => {
-    tries++;
-    try {
-      const d = await api('GET', `/api/links/${id}/status`);
-      if (d.status === 'done' || d.status === 'error') {
-        clearInterval(iid);
-        activePolls.delete(id);
-        const proc = document.getElementById(`proc-${id}`);
-        if (proc) {
-          if (d.status === 'done') {
-            proc.replaceWith(buildCard(d));
-          } else {
-            showProcError(proc, id, d.error_msg || 'AI tagging failed');
-          }
-        }
-        refreshStats();
-        loadRecentSaves();
-        return;
-      }
-    } catch (_) {}
-    // After 30 tries (60s) show a soft warning but keep polling up to 150 tries (5 min)
-    if (tries === 30 && !timedOutWarning) {
-      timedOutWarning = true;
-      const proc = document.getElementById(`proc-${id}`);
-      if (proc) {
-        const lbl = proc.querySelector('.proc-label');
-        if (lbl) lbl.textContent = 'Still processing… (this can take a minute)';
-      }
+    // CPU sparkline
+    if (hist.cpu && hist.cpu.length > 2) {
+      body += `<div class="sparkline-wrap">${sparkline(hist.cpu, 'var(--green)', 28)}</div>`;
     }
-    if (tries >= 150) {
-      clearInterval(iid);
-      activePolls.delete(id);
-      const proc = document.getElementById(`proc-${id}`);
-      if (proc) showProcError(proc, id, 'AI is taking too long — tap Retry');
-    }
-  }, 2000);
-  activePolls.set(id, iid);
+  }
+
+  const age = n.lastPoll ? fmtAge(n.lastPoll) : '—';
+  return `<div class="node-card${alive ? '' : ' dead'}" data-id="${n.id}">
+    <div class="card-header">
+      <span class="node-name">${esc(n.name)}</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="dim" style="font-size:10px;color:var(--dim)">${age}</span>
+        <span class="status-badge ${alive ? 'alive' : 'dead'}">${alive ? '● ALIVE' : '● DEAD'}</span>
+      </div>
+    </div>
+    ${body}
+  </div>`;
 }
 
-function showProcError(proc, id, msg) {
-  proc.querySelector('.spinner').style.display = 'none';
-  proc.querySelector('.proc-label').textContent = '⚠️ ' + msg;
-  const btn = document.createElement('button');
-  btn.className = 'btn-sm retry-btn';
-  btn.textContent = '↺ Retry AI';
-  btn.style.marginTop = '8px';
-  btn.addEventListener('click', async () => {
-    btn.disabled = true; btn.textContent = 'Retrying…';
-    try {
-      await api('POST', `/api/links/${id}/reprocess`);
-      proc.querySelector('.spinner').style.display = '';
-      proc.querySelector('.proc-label').textContent = 'AI is analyzing…';
-      btn.remove();
-      pollLink(id);
-    } catch (_) { btn.disabled = false; btn.textContent = '↺ Retry AI'; }
+// ── Detail view ────────────────────────────────────────────────────────────
+function renderDetail(n) {
+  const el = document.getElementById('content');
+  document.getElementById('header-title').textContent = n.name.toUpperCase();
+
+  if (!n.alive) {
+    el.innerHTML = `<div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">STATUS</span>
+        <span class="panel-val" style="color:var(--red)">UNREACHABLE</span>
+      </div>
+      <div class="panel-body">
+        <p style="color:var(--dim);font-size:12px">
+          ${n.error || 'Cannot connect to metrics agent'}<br><br>
+          IP: <span style="color:var(--teal)">${esc(n.ip)}</span> · Port: ${getMetricsPort()}
+        </p>
+      </div>
+    </div>`;
+    return;
+  }
+
+  const m = n.metrics;
+  if (!m) { el.innerHTML = '<div class="empty-state"><p>Loading…</p></div>'; return; }
+
+  const cpu = m.cpu || {};
+  const mem = m.memory || {};
+  const gpus = m.gpus || [];
+  const procs = m.processes || [];
+  const hist = n.history || {};
+  let html = '';
+
+  // ── CPU panel ──
+  const cpuPct = cpu.overall ?? 0;
+  const cpuMetas = [];
+  if (cpu.temp_c != null) cpuMetas.push(`<span class="${tempColor(cpu.temp_c)}">${cpu.temp_c}°C</span>`);
+  if (cpu.load_avg) cpuMetas.push(`load ${cpu.load_avg.map(v => v.toFixed(2)).join(' / ')}`);
+  if (cpu.freq_mhz) cpuMetas.push(`${(cpu.freq_mhz/1000).toFixed(2)} GHz`);
+  if (cpu.count)    cpuMetas.push(`${cpu.count} cores`);
+
+  html += `<div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">CPU</span>
+      <span class="panel-val" style="color:${usageColor(cpuPct)}">${fmtPct(cpuPct)}</span>
+    </div>
+    <div class="panel-body">`;
+
+  if (hist.cpu && hist.cpu.length > 2) {
+    html += `<div class="detail-sparkline">${sparkline(hist.cpu, usageColor(cpuPct), 50)}</div>`;
+  }
+
+  html += `${bar(cpuPct, null, true)}`;
+  if (cpuMetas.length) html += `<div class="meta-row" style="margin-top:8px">${cpuMetas.map(s=>`<span>${s}</span>`).join('')}</div>`;
+
+  // Per-core grid
+  if (cpu.per_core && cpu.per_core.length > 0) {
+    const cols = cpu.per_core.length > 16 ? 'wide' : '';
+    html += `<div class="core-grid ${cols}" style="margin-top:10px">`;
+    cpu.per_core.forEach((v, i) => {
+      const c = usageColor(v);
+      html += `<div class="core-item">
+        <span class="core-idx">${i}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${v.toFixed(0)}%;background:${c}"></div></div>
+        <span class="core-pct" style="color:${c}">${v.toFixed(0)}%</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  html += '</div></div>';
+
+  // ── Memory panel ──
+  const memPct = mem.percent ?? 0;
+  html += `<div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">MEMORY</span>
+      <span class="panel-val" style="color:var(--purple)">${fmtPct(memPct)}</span>
+    </div>
+    <div class="panel-body">
+      ${bar(memPct, 'var(--purple)', true)}
+      <div class="meta-row" style="margin-top:8px">
+        <span>Used <span style="color:var(--purple)">${fmtBytes(mem.used)}</span></span>
+        <span>Free <span style="color:var(--dim)">${fmtBytes(mem.free)}</span></span>
+        <span>Total <span style="color:var(--text)">${fmtBytes(mem.total)}</span></span>
+      </div>`;
+
+  if (mem.swap_total > 0) {
+    html += `<hr class="divider">
+      <div style="display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:6px">
+        <span class="metric-label">SWAP</span>
+        ${bar(mem.swap_percent, 'var(--orange)')}
+        <span style="font-size:11px;color:var(--orange)">${fmtPct(mem.swap_percent)}</span>
+      </div>
+      <div class="meta-row" style="margin-top:4px">
+        <span>Used <span style="color:var(--orange)">${fmtBytes(mem.swap_used)}</span></span>
+        <span>Total <span style="color:var(--dim)">${fmtBytes(mem.swap_total)}</span></span>
+      </div>`;
+  }
+
+  html += '</div></div>';
+
+  // ── GPU panels ──
+  gpus.forEach((g, gi) => {
+    const gPct = g.util_pct ?? 0;
+    const gMemPct = g.mem_total_mb ? (g.mem_used_mb / g.mem_total_mb) * 100 : 0;
+    const gpuHist = hist.gpus && hist.gpus[gi] ? hist.gpus[gi] : [];
+    const gpuName = (g.name || 'GPU ' + g.index);
+    const gpuMetas = [];
+    if (g.temp_c != null) gpuMetas.push(`<span class="${tempColor(g.temp_c)}">${g.temp_c}°C</span>`);
+    if (g.power_w != null) {
+      const pPct = g.power_limit_w ? (g.power_w / g.power_limit_w * 100) : null;
+      gpuMetas.push(`<span style="color:${pPct && pPct > 85 ? 'var(--red)' : 'var(--dim)'}">Power ${g.power_w.toFixed(0)}W${g.power_limit_w ? ' / ' + g.power_limit_w.toFixed(0) + 'W' : ''}</span>`);
+    }
+
+    html += `<div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">${esc(gpuName)}</span>
+        <span class="panel-val" style="color:var(--blue)">${fmtPct(gPct)}</span>
+      </div>
+      <div class="panel-body">`;
+
+    if (gpuHist.length > 2) {
+      html += `<div class="detail-sparkline">${sparkline(gpuHist, 'var(--blue)', 50)}</div>`;
+    }
+
+    html += `<div style="display:grid;grid-template-columns:46px 1fr auto;align-items:center;gap:6px;margin-bottom:6px">
+      <span class="metric-label">UTIL</span>
+      ${bar(gPct, 'var(--blue)', true)}
+      <span style="font-size:11px;color:var(--blue)">${fmtPct(gPct)}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:46px 1fr auto;align-items:center;gap:6px">
+      <span class="metric-label">VRAM</span>
+      ${bar(gMemPct, 'var(--teal)', true)}
+      <span style="font-size:11px;color:var(--teal)">${fmtBytes((g.mem_used_mb||0)*1048576)}/${fmtBytes((g.mem_total_mb||0)*1048576)}</span>
+    </div>`;
+
+    if (gpuMetas.length) html += `<div class="meta-row" style="margin-top:8px">${gpuMetas.map(s=>`<span>${s}</span>`).join('')}</div>`;
+    html += '</div></div>';
   });
-  proc.appendChild(btn);
-}
 
-async function loadRecentSaves() {
-  try {
-    const links = await api('GET', '/api/links?limit=5&offset=0');
-    const wrap = document.getElementById('recent-saves');
-    wrap.innerHTML = '';
-    if (!links.length) {
-      wrap.innerHTML = '<div style="padding:16px 14px;font-size:.82rem;color:var(--muted)">No links yet — save your first one above!</div>';
-      return;
-    }
-    links.slice(0, 5).forEach(l => wrap.appendChild(buildCard(l)));
-  } catch (_) {}
-}
+  // ── Processes panel ──
+  if (procs.length > 0) {
+    html += `<div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">TOP PROCESSES</span>
+        <span style="font-size:10px;color:var(--dim)">by cpu</span>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <table class="proc-table">
+          <thead><tr>
+            <th>PID</th><th>NAME</th><th>CPU%</th><th>MEM%</th><th>USER</th>
+          </tr></thead>
+          <tbody>`;
 
-// ═══════════════════════════════════════════════════════════════
-// DIGEST TAB
-// ═══════════════════════════════════════════════════════════════
-let digestDate = toDateStr(new Date());
-
-document.getElementById('digest-prev').addEventListener('click', () => {
-  digestDate = addDays(digestDate, -1);
-  loadDigest();
-});
-document.getElementById('digest-next').addEventListener('click', () => {
-  const next = addDays(digestDate, 1);
-  const today = toDateStr(new Date());
-  if (next > today) return;
-  digestDate = next;
-  loadDigest();
-});
-
-async function loadDigest() {
-  const today = toDateStr(new Date());
-  const nextBtn = document.getElementById('digest-next');
-  nextBtn.disabled = digestDate >= today;
-
-  const label = fmtDateLabel(digestDate);
-  document.getElementById('digest-date-label').innerHTML =
-    escHtml(label) + (digestDate === today ? '<span class="today-chip">Today</span>' : '');
-
-  const content = document.getElementById('digest-content');
-  content.innerHTML = '<div class="empty"><div style="margin:0 auto 10px" class="spinner" style="width:24px;height:24px"></div><p>Loading…</p></div>';
-
-  try {
-    const data = await api('GET', `/api/digest?date=${digestDate}&tz=${localTzOffset()}`);
-    document.getElementById('digest-count').textContent = data.total ? `${data.total} link${data.total !== 1 ? 's' : ''}` : '';
-    content.innerHTML = '';
-
-    if (data.total === 0) {
-      content.innerHTML = `<div class="empty">
-        <span class="empty-icon">📭</span>
-        <h3>Nothing saved ${label === 'Today' ? 'today' : 'on ' + label}</h3>
-        <p>Switch to the Save tab and add your first link!</p>
-      </div>`;
-      return;
-    }
-
-    const sortedCats = Object.keys(data.categories).sort((a, b) => {
-      const ai = CAT_ORDER.indexOf(a), bi = CAT_ORDER.indexOf(b);
-      return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+    procs.slice(0, 20).forEach(p => {
+      html += `<tr>
+        <td style="color:var(--dim)">${p.pid}</td>
+        <td class="proc-name">${esc(p.name)}</td>
+        <td class="proc-cpu">${p.cpu.toFixed(1)}</td>
+        <td class="proc-mem">${p.mem.toFixed(1)}</td>
+        <td style="color:var(--dim);font-size:10px">${esc(p.user)}</td>
+      </tr>`;
     });
 
-    for (const cat of sortedCats) {
-      const items = data.categories[cat];
-      const color = catColor(cat);
-      const sec = document.createElement('div');
-      sec.className = 'cat-section';
-      sec.innerHTML = `
-        <div class="cat-header">
-          <div class="cat-dot" style="background:${color}"></div>
-          <span class="cat-name" style="color:${color}">${escHtml(cat)}</span>
-          <span class="cat-count">${items.length}</span>
-        </div>`;
-      items.forEach(link => sec.appendChild(buildCard(link)));
-      content.appendChild(sec);
-    }
-  } catch (_) {
-    content.innerHTML = `<div class="empty">
-      <span class="empty-icon">⚠️</span>
-      <h3>Failed to load</h3>
-      <p>Check your connection and try again.</p>
-    </div>`;
+    html += '</tbody></table></div></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function showSummary() {
+  currentNodeId = null;
+  document.getElementById('back-btn').style.display = 'none';
+  document.getElementById('header-title').textContent = 'FARM MONITOR';
+  clearInterval(detailTimer);
+  startSummaryPolling();
+}
+
+function showDetail(id) {
+  currentNodeId = id;
+  document.getElementById('back-btn').style.display = '';
+  clearInterval(summaryTimer);
+  startDetailPolling(id);
+}
+
+// ── Polling ────────────────────────────────────────────────────────────────
+function getMetricsPort() {
+  return window._metricsPort || 19999;
+}
+
+async function loadSummary() {
+  try {
+    const res = await fetch('/api/nodes');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    nodes = await res.json();
+    lastUpdate = Date.now();
+    renderSummary(nodes);
+    updateStatusLine();
+  } catch (e) {
+    document.getElementById('status-line').textContent = 'error: ' + e.message;
   }
 }
 
-// Pull-to-refresh on digest
-(function() {
-  const pane = document.getElementById('pane-digest');
-  const hint = document.getElementById('ptr-hint');
-  let startY = 0, pulling = false;
-
-  pane.addEventListener('touchstart', e => {
-    if (pane.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true; }
-  }, { passive: true });
-
-  pane.addEventListener('touchmove', e => {
-    if (!pulling) return;
-    if (e.touches[0].clientY - startY > 8) hint.classList.add('show');
-  }, { passive: true });
-
-  pane.addEventListener('touchend', e => {
-    if (!pulling) return;
-    pulling = false;
-    hint.classList.remove('show');
-    if (e.changedTouches[0].clientY - startY > 60) loadDigest();
-  }, { passive: true });
-})();
-
-// ═══════════════════════════════════════════════════════════════
-// BROWSE TAB
-// ═══════════════════════════════════════════════════════════════
-let browseOffset = 0;
-let browseCategory = '';
-let browseUnread = false;
-let browseSearch = '';
-
-function browseReset() {
-  browseOffset = 0;
-  document.getElementById('browse-list').innerHTML = '';
-  document.getElementById('btn-load-more').style.display = 'none';
-}
-
-async function loadBrowse(append = false) {
-  if (!append) {
-    const list = document.getElementById('browse-list');
-    list.innerHTML = '<div class="empty"><p>Loading…</p></div>';
-  }
-
+async function loadDetail(id) {
   try {
-    const p = new URLSearchParams({ limit: PAGE, offset: browseOffset });
-    if (browseSearch) p.set('search', browseSearch);
-    if (browseCategory) p.set('category', browseCategory);
-    if (browseUnread) p.set('unread', '1');
-
-    const links = await api('GET', '/api/links?' + p);
-    const list = document.getElementById('browse-list');
-
-    if (!append) list.innerHTML = '';
-
-    if (!append && links.length === 0) {
-      list.innerHTML = `<div class="empty">
-        <span class="empty-icon">🔍</span>
-        <h3>No results</h3>
-        <p>${browseSearch ? 'Try a different search term' : 'No links saved yet'}</p>
-      </div>`;
-      document.getElementById('btn-load-more').style.display = 'none';
-      return;
-    }
-
-    links.forEach(l => list.appendChild(buildCard(l)));
-    browseOffset += links.length;
-    document.getElementById('btn-load-more').style.display = links.length === PAGE ? '' : 'none';
-  } catch (_) {
-    if (!append) document.getElementById('browse-list').innerHTML =
-      '<div class="empty"><span class="empty-icon">⚠️</span><h3>Failed to load</h3></div>';
+    const res = await fetch('/api/nodes/' + id);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const node = await res.json();
+    lastUpdate = Date.now();
+    renderDetail(node);
+    updateStatusLine();
+  } catch (e) {
+    document.getElementById('status-line').textContent = 'error: ' + e.message;
   }
 }
 
-document.getElementById('search-input').addEventListener('input', debounce(e => {
-  browseSearch = e.target.value.trim();
-  browseReset(); loadBrowse();
-}, 300));
-
-document.getElementById('unread-row').addEventListener('click', () => {
-  browseUnread = !browseUnread;
-  document.getElementById('toggle-track').classList.toggle('on', browseUnread);
-  browseReset(); loadBrowse();
-});
-
-document.getElementById('btn-load-more').addEventListener('click', () => loadBrowse(true));
-
-async function loadCategories() {
-  try {
-    const cats = await api('GET', '/api/categories');
-    const row = document.getElementById('filter-row');
-
-    cats.forEach(({ category }) => {
-      const existing = row.querySelector(`[data-cat="${CSS.escape(category)}"]`);
-      if (existing) return;
-      const btn = document.createElement('button');
-      btn.className = 'fchip';
-      btn.dataset.cat = category;
-      const dot = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${catColor(category)};margin-right:4px;vertical-align:middle"></span>`;
-      btn.innerHTML = dot + escHtml(category);
-      row.appendChild(btn);
-    });
-
-    row.querySelectorAll('.fchip').forEach(btn => {
-      btn.addEventListener('click', () => {
-        row.querySelectorAll('.fchip').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        browseCategory = btn.dataset.cat;
-        browseReset(); loadBrowse();
-      });
-    });
-  } catch (_) {}
+function startSummaryPolling() {
+  loadSummary();
+  summaryTimer = setInterval(loadSummary, 5000);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SERVICE WORKER
-// ═══════════════════════════════════════════════════════════════
+function startDetailPolling(id) {
+  loadDetail(id);
+  detailTimer = setInterval(() => loadDetail(id), 3000);
+}
+
+function updateStatusLine() {
+  if (!nodes.length) {
+    document.getElementById('status-line').textContent = 'no nodes configured';
+    return;
+  }
+  const alive = nodes.filter(n => n.alive).length;
+  document.getElementById('status-line').textContent =
+    alive + '/' + nodes.length + ' alive · ' + fmtAge(lastUpdate);
+}
+
+// ── Clock ──────────────────────────────────────────────────────────────────
+function tickClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  if (lastUpdate) updateStatusLine();
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+// ── Escape HTML ────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
-// ═══════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════
-(async function init() {
-  await Promise.all([refreshStats(), loadRecentSaves(), loadCategories()]);
-  setInterval(refreshStats, 30000);
-})();
+startSummaryPolling();
 </script>
 </body>
 </html>

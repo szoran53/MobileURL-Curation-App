@@ -1,15 +1,13 @@
 {
-  "name": "mobileurl-curation-app",
+  "name": "farm-monitor",
   "version": "1.0.0",
-  "description": "AI-powered mobile link curation app",
+  "description": "Compute farm CPU/GPU performance monitor",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.52.0",
-    "better-sqlite3": "^11.0.0",
     "dotenv": "^16.0.0",
     "express": "^4.19.0"
   }
