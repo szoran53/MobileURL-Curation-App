@@ -87,8 +87,6 @@ async function fetchPageMetadata(url) {
 
 const MODELS = [
   'claude-haiku-4-5-20251001',
-  'claude-3-5-haiku-20241022',
-  'claude-3-haiku-20240307',
 ];
 
 async function callClaude(prompt) {
@@ -96,9 +94,10 @@ async function callClaude(prompt) {
   let lastErr;
   for (const model of MODELS) {
     try {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Claude API timeout')), 25000)
-      );
+      let timeoutId;
+      const timeout = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Claude API timeout')), 25000);
+      });
       // Pre-fill the assistant turn with '{' to force a raw JSON response
       const response = await Promise.race([
         client.messages.create({
@@ -111,11 +110,14 @@ async function callClaude(prompt) {
         }),
         timeout
       ]);
+      clearTimeout(timeoutId);
       return '{' + response.content[0].text.trim();
     } catch (err) {
       lastErr = err;
       const msg = err.message || '';
-      if (!msg.includes('model') && !msg.includes('not found') && !msg.includes('404')) throw err;
+      const status = err.status || err.statusCode || 0;
+      const isModelError = status === 404 || msg.includes('model') || msg.includes('not found') || msg.includes('404');
+      if (!isModelError) throw err;
       console.warn(`Model ${model} unavailable, trying next...`);
     }
   }
