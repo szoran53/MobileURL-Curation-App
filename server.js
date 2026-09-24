@@ -131,26 +131,58 @@ app.get('/api/stats', (req, res) => {
   res.json(stats);
 });
 
-// Test Claude connectivity — visit /api/test-claude in browser to diagnose
-app.get('/api/test-claude', async (req, res) => {
-  if (!process.env.ANTHROPIC_API_KEY) return res.json({ ok: false, error: 'ANTHROPIC_API_KEY is not set' });
+// Test LLM connectivity — visit /api/test-llm in browser to diagnose.
+// Probes llama.cpp llama-server: lists models (GET ${LLM_BASE_URL}/models) and,
+// when LLM_MODEL is set, runs a tiny completion as a smoke check.
+app.get('/api/test-llm', async (req, res) => {
+  const base = process.env.LLM_BASE_URL;
+  if (!base) {
+    return res.json({ ok: false, error: 'LLM_BASE_URL is not set — cannot reach llama.cpp llama-server' });
+  }
   try {
-    const Anthropic = require('@anthropic-ai/sdk');
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const models = ['claude-haiku-4-5-20251001', 'claude-3-5-haiku-20241022', 'claude-3-haiku-20240307'];
-    const results = {};
-    for (const model of models) {
-      try {
-        const r = await client.messages.create({
-          model, max_tokens: 10,
-          messages: [{ role: 'user', content: 'Say "ok"' }]
-        });
-        results[model] = 'OK: ' + r.content[0].text.trim();
-      } catch (e) {
-        results[model] = 'ERROR: ' + String(e.message).slice(0, 120);
+    const modelsUrl = base.replace(/\/$/, '') + '/models';
+    const modelsResp = await fetch(modelsUrl, {
+      headers: { Authorization: process.env.LLM_API_KEY ? `Bearer ${process.env.LLM_API_KEY}` : undefined }
+    });
+    const modelsText = String(await modelsResp.text().catch(() => ''));
+    if (!modelsResp.ok) {
+      return res.json({ ok: false, error: `LLM server /models failed: ${modelsResp.status} ${modelsText.slice(0, 200)}` });
+    }
+    let modelIds = [];
+    try {
+      const modelsData = JSON.parse(modelsText);
+      modelIds = (modelsData.data || []).map(m => m.id);
+    } catch (_) {
+      return res.json({ ok: false, error: 'LLM server /models returned non-JSON' });
+    }
+    const expected = process.env.LLM_MODEL || null;
+
+    let smoke = expected ? 'not set' : 'skipped (set LLM_MODEL to test)';
+    if (expected) {
+      const endpoint = base.replace(/\/$/, '') + '/chat/completions';
+      const headers = { 'Content-Type': 'application/json' };
+      if (process.env.LLM_API_KEY) headers.Authorization = `Bearer ${process.env.LLM_API_KEY}`;
+      const smokeResp = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ model: expected, max_tokens: 8, messages: [{ role: 'user', content: 'Say "ok"' }] })
+      });
+      if (smokeResp.ok) {
+        const d = JSON.parse(String(await smokeResp.text().catch(() => '')));
+        smoke = 'OK: ' + (d.choices?.[0]?.message?.content || '').trim().slice(0, 80);
+      } else {
+        smoke = `ERROR: ${smokeResp.status} ${String(await smokeResp.text().catch(() => '')).slice(0, 120)}`;
       }
     }
-    res.json({ ok: true, key_prefix: process.env.ANTHROPIC_API_KEY.slice(0, 10) + '…', models: results });
+
+    res.json({
+      ok: modelIds.length > 0 && (!expected || modelIds.includes(expected)),
+      base,
+      model: expected,
+      modelMatch: expected ? modelIds.includes(expected) : true,
+      available: modelIds,
+      smoke
+    });
   } catch (e) {
     res.json({ ok: false, error: String(e.message) });
   }
@@ -201,8 +233,8 @@ app.post('/api/email-webhook', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n LinkCurator running at http://localhost:${PORT}`);
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.log(' Warning: ANTHROPIC_API_KEY not set — AI tagging disabled');
+  if (!process.env.LLM_BASE_URL || !process.env.LLM_MODEL) {
+    console.log(' Warning: LLM_BASE_URL or LLM_MODEL not set — AI curation disabled');
   }
   console.log('');
 });

@@ -1,4 +1,3 @@
-const Anthropic = require('@anthropic-ai/sdk');
 const { getDB } = require('./db');
 
 const CATEGORIES = [
@@ -85,47 +84,66 @@ async function fetchPageMetadata(url) {
   }
 }
 
-const MODELS = [
-  'claude-haiku-4-5-20251001',
-  'claude-3-5-haiku-20241022',
-  'claude-3-haiku-20240307',
-];
+// Local Bonsai-2-28B (llama.cpp) inference is much slower than the cloud, so
+// the timeout default is raised well above the old 25s. Tune via LLM_TIMEOUT_MS.
+const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 180000);
+const LLM_MAX_TOKENS = Number(process.env.LLM_MAX_TOKENS || 512);
 
-async function callClaude(prompt) {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  let lastErr;
-  for (const model of MODELS) {
-    try {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Claude API timeout')), 25000)
-      );
-      // Pre-fill the assistant turn with '{' to force a raw JSON response
-      const response = await Promise.race([
-        client.messages.create({
-          model,
-          max_tokens: 512,
-          messages: [
-            { role: 'user', content: prompt },
-            { role: 'assistant', content: '{' }
-          ]
-        }),
-        timeout
-      ]);
-      return '{' + response.content[0].text.trim();
-    } catch (err) {
-      lastErr = err;
-      const msg = err.message || '';
-      if (!msg.includes('model') && !msg.includes('not found') && !msg.includes('404')) throw err;
-      console.warn(`Model ${model} unavailable, trying next...`);
-    }
+// Calls the llama.cpp llama-server OpenAI-compatible endpoint
+//  POST /v1/chat/completions  and reads choices[0].message.content
+//  (the llama.cpp/OpenAI shape, vs the old Anthropic content[0].text).
+async function callLLM(prompt) {
+  const base = process.env.LLM_BASE_URL;
+  const model = process.env.LLM_MODEL;
+  if (!base) throw new Error('LLM_BASE_URL is not set — cannot reach llama.cpp llama-server');
+  if (!model) throw new Error('LLM_MODEL is not set — local curation model not configured');
+
+  const endpoint = base.replace(/\/$/, '') + '/chat/completions';
+  const body = JSON.stringify({
+    model,
+    max_tokens: LLM_MAX_TOKENS,
+    // Pre-fill the assistant turn with '{' to force a raw JSON response
+    messages: [
+      { role: 'user', content: prompt },
+      { role: 'assistant', content: '{' }
+    ]
+  });
+  const headers = { 'Content-Type': 'application/json' };
+  if (process.env.LLM_API_KEY) headers.Authorization = `Bearer ${process.env.LLM_API_KEY}`;
+
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`LLM timeout after ${LLM_TIMEOUT_MS}ms`)), LLM_TIMEOUT_MS)
+  );
+
+  const response = await Promise.race([
+    fetch(endpoint, { method: 'POST', headers, body }),
+    timeout
+  ]);
+
+  if (!response.ok) {
+    const detail = String(await response.text().catch(() => '')).slice(0, 200);
+    throw new Error(`LLM request failed (${response.status}): ${detail}`);
   }
-  throw lastErr;
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
+  if (typeof content !== 'string' || content.trim() === '') {
+    throw new Error('No text content in LLM response (expected choices[0].message.content)');
+  }
+
+  // Return the raw model text. Because we pre-fill the assistant turn with '{',
+  // llama.cpp normally returns the continuation (after the '{'); some servers
+  // may return a complete object. Callers normalize to a full object string.
+  return content.trim();
 }
 
 async function processLink(id, url) {
   const db = getDB();
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  // Graceful fallback when the local LLM isn't configured: still save the link
+  // using page metadata only (status done, category Miscellaneous).
+  const llmReady = process.env.LLM_BASE_URL && process.env.LLM_MODEL;
+  if (!llmReady) {
     const meta = await fetchPageMetadata(url);
     db.prepare(`UPDATE links SET title = ?, status = 'done', category = 'Miscellaneous' WHERE id = ?`)
       .run(meta.title || url, id);
@@ -152,9 +170,13 @@ Respond with ONLY a valid JSON object (no markdown, no code fences, no extra tex
 
 Tags should be specific (e.g. "Claude 4", "prompt engineering", "AI safety", "open source", "benchmark"). 3-5 tags max.`;
 
-    const text = await callClaude(prompt);
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON in Claude response');
+    const text = await callLLM(prompt);
+    // The '{' pre-fill makes the model emit the continuation, but a complete
+    // object may also be returned. Normalize to a full object string, then
+    // extract the (first) JSON object.
+    const candidate = text.trim().startsWith('{') ? text.trim() : '{' + text.trim();
+    const jsonMatch = candidate.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in LLM response');
 
     const result = JSON.parse(jsonMatch[0]);
 
