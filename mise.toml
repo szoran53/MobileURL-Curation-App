@@ -1,0 +1,14 @@
+# Diffpi plan gates: format:check / lint / test (see mise tasks --json --all)
+#
+#   format:check — no dedicated formatter is configured for this JS/HTML project;
+#                  style is covered by the `lint` task (ESLint). No-op, always passes.
+#   lint         — eslint flat-config.
+#   test         — node --test (unit + server integration).
+[tasks."format:check"]
+run = "true"
+
+[tasks.lint]
+run = "npm run lint"
+
+[tasks.test]
+run = "npm run test"
