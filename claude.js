@@ -87,7 +87,7 @@ async function fetchPageMetadata(url) {
 // Local Bonsai-2-28B (llama.cpp) inference is much slower than the cloud, so
 // the timeout default is raised well above the old 25s. Tune via LLM_TIMEOUT_MS.
 const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 180000);
-const LLM_MAX_TOKENS = Number(process.env.LLM_MAX_TOKENS || 512);
+const LLM_MAX_TOKENS = Number(process.env.LLM_MAX_TOKENS || 2048);
 
 // Calls the llama.cpp llama-server OpenAI-compatible endpoint
 //  POST /v1/chat/completions  and reads choices[0].message.content

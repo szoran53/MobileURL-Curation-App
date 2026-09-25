@@ -1,0 +1,30 @@
+# linkcurator — local Bonsai-2-27B curation app (Docker)
+#
+# Deploy on 10.0.10.3, the same host where llama.cpp llama-server runs
+# (llama.cpp OpenAI API is at 127.0.0.1:8088/v1; no auth required).
+#
+#   cp .env.example .env          # optional — sensible defaults below
+#   docker compose up -d
+#
+# Networking: HOST. Because the container and llama.cpp are on the same host
+# (10.0.10.3), host networking reaches the LLM over loopback with no routing
+# ambiguity. The app is then reachable at http://10.0.10.3:3000 (no port
+# mapping). For an isolated container instead, use network_mode: bridge +
+# ports: ["3000:3000"] + LLM_BASE_URL: http://10.0.10.3:8088/v1.
+services:
+  linkcurator:
+    build: .
+    container_name: linkcurator
+    network_mode: host
+    environment:
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://127.0.0.1:8088/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-/home/steve/Downloads/Bonsai-demo/Bonsai-demo/models/bonsai2-gguf/27B/Ternary-Bonsai-2-27B-PQ2_0.gguf}
+      LLM_TIMEOUT_MS: ${LLM_TIMEOUT_MS:-180000}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-2048}
+      PORT: "3000"
+    volumes:
+      # links.db lives on the 10.0.10.3 host (./data/links.db) and survives
+      # container rebuilds and restarts.
+      - ./data:/data
+    restart: unless-stopped

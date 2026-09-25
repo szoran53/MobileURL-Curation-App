@@ -1,0 +1,13 @@
+# Keep the build context minimal: only source + manifest.
+# node_modules is copied from the builder stage, not baked in.
+node_modules
+data
+.env
+.git
+.gitignore
+test
+.diffpi
+Dockerfile
+docker-compose.yml
+.dockerignore
+*.md
