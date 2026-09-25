@@ -165,11 +165,13 @@ app.get('/api/test-llm', async (req, res) => {
       const smokeResp = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ model: expected, max_tokens: 8, messages: [{ role: 'user', content: 'Say "ok"' }] })
+        body: JSON.stringify({ model: expected, max_tokens: 32, messages: [{ role: 'user', content: 'Say "ok"' }] })
       });
       if (smokeResp.ok) {
         const d = JSON.parse(String(await smokeResp.text().catch(() => '')));
-        smoke = 'OK: ' + (d.choices?.[0]?.message?.content || '').trim().slice(0, 80);
+        const msg = d.choices?.[0]?.message;
+        const smokeText = (msg?.content || msg?.reasoning_content || '').trim();
+        smoke = 'OK: ' + smokeText.slice(0, 80);
       } else {
         smoke = `ERROR: ${smokeResp.status} ${String(await smokeResp.text().catch(() => '')).slice(0, 120)}`;
       }
