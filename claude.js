@@ -197,4 +197,4 @@ Tags should be specific (e.g. "Claude 4", "prompt engineering", "AI safety", "op
   }
 }
 
-module.exports = { processLink };
+module.exports = { processLink, callLLM };

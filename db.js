@@ -30,7 +30,11 @@ function initDB() {
     CREATE INDEX IF NOT EXISTS idx_status ON links(status);
   `);
   // Add error_msg column if upgrading from older schema
-  try { db.exec(`ALTER TABLE links ADD COLUMN error_msg TEXT`); } catch (_) {}
+  try {
+    db.exec(`ALTER TABLE links ADD COLUMN error_msg TEXT`);
+  } catch {
+    // Column already present in newer DBs; no-op.
+  }
   return db;
 }
 

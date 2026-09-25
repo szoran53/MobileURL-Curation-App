@@ -152,7 +152,7 @@ app.get('/api/test-llm', async (req, res) => {
     try {
       const modelsData = JSON.parse(modelsText);
       modelIds = (modelsData.data || []).map(m => m.id);
-    } catch (_) {
+    } catch {
       return res.json({ ok: false, error: 'LLM server /models returned non-JSON' });
     }
     const expected = process.env.LLM_MODEL || null;
@@ -230,11 +230,16 @@ app.post('/api/email-webhook', async (req, res) => {
   res.json({ saved, urls });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`\n LinkCurator running at http://localhost:${PORT}`);
-  if (!process.env.LLM_BASE_URL || !process.env.LLM_MODEL) {
-    console.log(' Warning: LLM_BASE_URL or LLM_MODEL not set — AI curation disabled');
-  }
-  console.log('');
-});
+// Listen only when run directly (so the app can be imported by tests).
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`\n LinkCurator running at http://localhost:${PORT}`);
+    if (!process.env.LLM_BASE_URL || !process.env.LLM_MODEL) {
+      console.log(' Warning: LLM_BASE_URL or LLM_MODEL not set — AI curation disabled');
+    }
+    console.log('');
+  });
+}
+
+module.exports = app;
