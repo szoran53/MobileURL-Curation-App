@@ -675,7 +675,7 @@ function truncUrl(url) {
     const u = new URL(url);
     const path = u.pathname.length > 32 ? u.pathname.slice(0, 32) + '…' : u.pathname;
     return u.hostname.replace(/^www\./, '') + path;
-  } catch { return url.slice(0, 50); }
+  } catch { return String(url || '').slice(0, 50); }
 }
 
 function escHtml(s) {
