@@ -108,6 +108,16 @@ test('server: /api/test-llm, /api/links curation, and stats', async () => {
     assert.strictEqual(row.category, 'AI Research & Papers');
     assert.deepStrictEqual(row.tags, ['fake', 'llm']);
 
+    // Regression (forever spinner): /status must return the fields the save
+    // screen's proc card needs. The SELECT used to omit url/source/created_at/
+    // read/error_msg, so buildCard(statusResp) threw on truncUrl(undefined) and
+    // the spinner never stopped. These asserts lock that in.
+    assert.ok(row.url, 'status must return url');
+    assert.ok(row.source, 'status must return source');
+    assert.ok(row.created_at, 'status must return created_at');
+    assert.ok('read' in row, 'status must return read');
+    assert.ok('error_msg' in row, 'status must return error_msg');
+
     // 3) stats + categories
     const stats = await (await fetch(`${base}/api/stats`)).json();
     assert.ok(stats.total >= 1, 'stats.total >= 1');

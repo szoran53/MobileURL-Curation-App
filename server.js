@@ -30,7 +30,7 @@ app.post('/api/links', async (req, res) => {
 // Poll link status
 app.get('/api/links/:id/status', (req, res) => {
   const db = getDB();
-  const link = db.prepare('SELECT id, status, title, category, tags, summary, note FROM links WHERE id = ?').get(req.params.id);
+  const link = db.prepare('SELECT id, url, source, status, title, category, tags, summary, note, created_at, read, error_msg FROM links WHERE id = ?').get(req.params.id);
   if (!link) return res.status(404).json({ error: 'Not found' });
   res.json({ ...link, tags: JSON.parse(link.tags || '[]') });
 });
